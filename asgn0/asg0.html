@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>draw vectors</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="example" width="400" height="400"> vector canvas </canvas>
+
+    <!-- load javascript -->
+    <script src="/lib/cuon-matrix-cse160.js"></script>
+    <script src="asg0.js"></script>
+
+    <!-- v1 elements -->
+    <br /><br />
+    <label for="v1.x">v1:</label>
+    <!-- create input field for v1.x coordinate -->
+    <label for="v1.x">x</label>
+    <input type="text" id="v1.x" name="v1.x" required minlength="4" maxlength="8" size="10" />
+    <!-- create input field for v1.y coordinate -->
+    <label for="v1.y">y</label>
+    <input type="text" id="v1.y" name="v1.y" required minlength="4" maxlength="8" size="10" />
+
+    <!-- v2 elements -->
+    <br /><br />
+    <label for="v2.x">v2:</label>
+    <!-- create input field for v2.x coordinate -->
+    <label for="v2.x">x</label>
+    <input type="text" id="v2.x" name="v2.x" required minlength="4" maxlength="8" size="10" />
+    <!-- create input field for v2.y coordinate -->
+    <label for="v2.y">y</label>
+    <input type="text" id="v2.y" name="v2.y" required minlength="4" maxlength="8" size="10" />
+    <!-- draw button for base v1 and v2 vectors -->
+    <br /><br />
+    <input type="button" value="draw" id="draw" onclick="handleDrawEvent()" />
+
+    <!-- create a operation selector, callable with 'operation-select' -->
+    <br /><br />
+    <label for="operation-select"> Operation: </label>
+    <select id="operation-select" name="operations">
+      <option value="add">add</option>
+      <option value="sub">sub</option>
+      <option value="mul">mul</option>
+      <option value="div">div</option>
+      <option value="magnitude">magnitude</option>
+      <option value="normalize">normalize</option>
+      <option value="angleBetween">angle between</option>
+      <option value="area">Area</option>
+    </select>
+
+    <!-- input text box for scalar operation value -->
+    <label for="scalar">scalar: </label>
+    <input type="text" name="scalar" id="scalar" />
+
+    <!-- draw button for operations on v1 and v2 -->
+    <br /><br />
+    <input type="button" value="draw" onclick="handleDrawOperationEvent()" />
+  </body>
+</html>
