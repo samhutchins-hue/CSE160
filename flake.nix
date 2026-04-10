@@ -1,33 +1,23 @@
-# flake.nix
 {
-  inputs = {
-    nixpkgs.url     = "github:NixOS/nixpkgs/nixos-unstable";
-    devenv.url      = "github:cachix/devenv";
-    devenv.inputs.nixpkgs.follows = "nixpkgs";
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { nixpkgs, devenv, ... }@inputs:
+  outputs = { nixpkgs, ... }:
   let
     system = "x86_64-linux";
     pkgs   = nixpkgs.legacyPackages.${system};
   in {
-    devShells.${system}.default = devenv.lib.mkShell {
-      inherit inputs pkgs;
-      modules = [{
-        packages = with pkgs; [
-          nodejs_20
-          nodePackages.prettier
-          # python3 available as fallback server if you ever want it
-        ];
+    devShells.${system}.default = pkgs.mkShell {
+      packages = with pkgs; [
+        nodejs_20
+        prettier
+        typescript-language-server
+        typescript
+      ];
 
-        # Optional: `devenv up` starts a local server
-        processes.serve.exec = "python3 -m http.server 8080";
-
-        enterShell = ''
-          echo "CSE160 devenv ready"
-          echo "Prettier: $(prettier --version)"
-        '';
-      }];
+      shellHook = ''
+        echo "CSE160 devenv ready"
+        echo "Prettier: $(prettier --version)"
+      '';
     };
   };
 }
