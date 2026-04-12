@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Change a point color</title>
+    </head>
+
+    <body onload="main()">
+        <canvas id="webgl" width="400" height="400">
+            Please use a browser that supports "canvas"
+        </canvas>
+
+        <p id="numdot">XXX</p>
+        <div id="controls">
+            <p>
+                <button id="clearButton">Clear</button>
+            </p>
+            <p>
+                <button id="pointButton">point</button>
+                <button id="triangleButton">triangle</button>
+                <button id="circleButton">circle</button>
+                segment
+                <input type="range" id="segmentSlider" name="segment" min="0" max="50" step="1" />
+            </p>
+            <p>
+                red
+                <input type="range" id="redSlider" name="red" min="0" max="100" step="any" />
+                <!-- red: <output id="redSliderValue"></output> -->
+            </p>
+
+            <p>
+                green
+                <input type="range" id="greenSlider" name="green" min="0" max="100" step="any" />
+                <!-- green: <output id="greenSliderValue"></output> -->
+            </p>
+            <p>
+                blue <input type="range" id="blueSlider" name="blue" min="0" max="100" step="any" />
+                <!-- blue: <output id="blueSliderValue"></output> -->
+            </p>
+            <p>
+                size <input type="range" id="sizeSlider" name="size" min="0" max="100" step="any" />
+                <!-- size: <output id="sizeSliderValue"></output> -->
+            </p>
+        </div>
+
+        <script src="lib/webgl-utils.js"></script>
+        <script src="lib/webgl-debug.js"></script>
+        <script src="lib/cuon-utils.js"></script>
+        <script src="Point.js"></script>
+        <script src="asgn1.js"></script>
+        <script src="Triangle.js"></script>
+        <script src="Circle.js"></script>
+    </body>
+</html>
