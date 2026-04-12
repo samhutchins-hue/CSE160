@@ -1,6 +1,6 @@
 class Circle {
     constructor() {
-        this.type = "point";
+        this.type = "circle";
         this.position = [0.0, 0.0, 0.0];
         this.color = [1.0, 1.0, 1.0, 1.0];
         this.size = 5.0;
@@ -10,12 +10,14 @@ class Circle {
         let xy = this.position;
         let rgba = this.color;
         var size = this.size;
+        var segments = this.segments;
 
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
 
         // Draw
-        var d = this.size / 200.0; // delta
-        let angleStep = 360 / this.segments;
+        var d = size / 200.0; // delta
+        let angleStep = 360 / segments;
+        debugLog("angleStep: ", angleStep);
         for (let angle = 0; angle < 360; angle = angle + angleStep) {
             let centerPt = [xy[0], xy[1]];
             let angle1 = angle;
@@ -30,6 +32,7 @@ class Circle {
             ];
             let pt1 = [centerPt[0] + vec1[0], centerPt[1] + vec1[1]];
             let pt2 = [centerPt[0] + vec2[0], centerPt[1] + vec2[1]];
+
             drawTriangle([xy[0], xy[1], pt1[0], pt1[1], pt2[0], pt2[1]]);
         }
     }

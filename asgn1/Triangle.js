@@ -19,7 +19,7 @@ class Triangle {
         // Pass the point size of a point to u_PointSize variable
         gl.uniform1f(u_PointSize, size);
         // Draw
-        var d = this.size / 200.0; // delta
+        var d = size / 200.0; // delta
         drawTriangle([xy[0], xy[1], xy[0] + d, xy[1], xy[0], xy[1] + d]);
     }
 }

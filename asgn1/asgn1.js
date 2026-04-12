@@ -16,9 +16,10 @@ var gl;
 
 // globals related to ui elements
 const colorScale = 100;
-let g_selectedColor = [0, 0, 0, 1];
+let g_selectedColor = [1, 1, 1, 1];
 let g_selectedSize = 5;
-g_selectedType = POINT;
+let g_selectedType = POINT;
+let g_selectedSegment = 10;
 
 var a_Position;
 var u_FragColor;
@@ -132,7 +133,6 @@ function addActionsForHtmlUI() {
         // Clear <canvas>
         renderAllShapes();
     };
-
     document.getElementById("pointButton").onclick = function () {
         debugLog("set to point");
         g_selectedType = POINT;
@@ -145,8 +145,11 @@ function addActionsForHtmlUI() {
         debugLog("set to circle");
         g_selectedType = CIRCLE;
     };
+    document.getElementById("myPictureButton").onclick = function () {
+        debugLog("drew my drawing");
+    };
 
-    // RGB slider events
+    // slider events
     document.getElementById("redSlider").oninput = function () {
         g_selectedColor[0] = parseFloat(this.value) / colorScale;
         debugLog("r value: ", g_selectedColor[0]);
@@ -159,11 +162,13 @@ function addActionsForHtmlUI() {
         g_selectedColor[2] = parseFloat(this.value) / colorScale;
         debugLog("b value: ", g_selectedColor[2]);
     };
-
-    // size slider events
     document.getElementById("sizeSlider").oninput = function () {
         g_selectedSize = parseFloat(this.value);
         debugLog("size value: ", g_selectedSize);
+    };
+    document.getElementById("segmentSlider").oninput = function () {
+        g_selectedSegment = parseFloat(this.value);
+        debugLog("segment step: ", g_selectedSegment);
     };
 }
 
@@ -182,6 +187,7 @@ function click(ev) {
     point.position = [x, y];
     point.color = g_selectedColor.slice();
     point.size = g_selectedSize;
+    point.segments = g_selectedSegment;
     g_shapesList.push(point);
 
     // g_points.push([x, y]);
@@ -247,3 +253,5 @@ function sendTextToHTML(text, htmlID) {
     }
     htmlElm.innerHTML = text;
 }
+
+function drawMyPicture() {}
