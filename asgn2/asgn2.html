@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Change a point color</title>
+    </head>
+    <p>Sam Hutchins</p>
+    <p>sthutchi@ucsc.edu</p>
+    <p>Notes to Grader:</p>
+
+    <body onload="main()">
+        <canvas id="webgl" width="400" height="400">
+            Please use a browser that supports "canvas"
+        </canvas>
+        <img src="reference.png" alt="reference" />
+
+        <p id="numdot">XXX</p>
+        <div id="controls">
+            <p>
+                <button id="clearButton">Clear</button>
+            </p>
+            <p>
+                <button id="pointButton">point</button>
+                <button id="triangleButton">triangle</button>
+                <button id="circleButton">circle</button>
+                <button id="myPictureButton">draw picture</button>
+            </p>
+            <p>
+                red
+                <input
+                    type="range"
+                    id="redSlider"
+                    name="red"
+                    value="100"
+                    min="0"
+                    max="100"
+                    step="any"
+                />
+                <!-- red: <output id="redSliderValue"></output> -->
+            </p>
+
+            <p>
+                green
+                <input
+                    type="range"
+                    id="greenSlider"
+                    name="green"
+                    value="100"
+                    min="0"
+                    max="100"
+                    step="any"
+                />
+                <!-- green: <output id="greenSliderValue"></output> -->
+            </p>
+            <p>
+                blue
+                <input
+                    type="range"
+                    id="blueSlider"
+                    name="blue"
+                    value="100"
+                    min="0"
+                    max="100"
+                    step="any"
+                />
+                <!-- blue: <output id="blueSliderValue"></output> -->
+            </p>
+            <p>
+                size
+                <input
+                    type="range"
+                    id="sizeSlider"
+                    name="size"
+                    value="10"
+                    min="0"
+                    max="100"
+                    step="any"
+                />
+                <!-- size: <output id="sizeSliderValue"></output> -->
+            </p>
+            <p>
+                segment<input
+                    type="range"
+                    id="segmentSlider"
+                    name="segment"
+                    value="10"
+                    min="3"
+                    max="25"
+                    step="1"
+                />
+            </p>
+        </div>
+
+        <script src="lib/webgl-utils.js"></script>
+        <script src="lib/webgl-debug.js"></script>
+        <script src="lib/cuon-utils.js"></script>
+        <script src="Point.js"></script>
+        <script src="asgn1.js"></script>
+        <script src="Triangle.js"></script>
+        <script src="Circle.js"></script>
+    </body>
+</html>
