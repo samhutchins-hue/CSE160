@@ -1,5 +1,10 @@
-// TODO rename all files to fit assignment standards
-// TODO remember to verify attribute vs uniform when creating a new gl variable
+// TODO [] remove cube class and implement functional way of building and rendering shapes
+// TODO [] measure performance by frametime rather than render scene call (bind by refresh rate of monitor)
+//  render calculation seems to be too quick, duration -> 0, so infinite fps
+// TODO [] verify if I really don't need a Cube class for certain animation states
+
+// TODO poke animation
+// TODO slide animation
 
 // NOTE interesting system design concept
 // this is bad because it requires the caller to ensure color invariant
@@ -52,6 +57,8 @@ let g_selectedSize = 5;
 let g_selectedType = POINT;
 let g_globalAngle = 0;
 let g_globalRot = 0;
+let g_leftElbowRot = 0;
+let g_leftWristRot = 0;
 let g_globalAnimation = false;
 
 let a_Position;
@@ -220,7 +227,17 @@ function addActionsForHtmlUI() {
   document.getElementById("rotSlider").oninput = function () {
     g_globalRot = parseFloat(this.value);
     renderScene();
-    debugLog("segment step: ", g_globalRot);
+    debugLog("shoulder: ", g_globalRot);
+  };
+  document.getElementById("elbowSlider").oninput = function () {
+    g_leftElbowRot = parseFloat(this.value);
+    renderScene();
+    debugLog("elbow: ", g_leftElbowRot);
+  };
+  document.getElementById("wristSlider").oninput = function () {
+    g_leftWristRot = parseFloat(this.value);
+    renderScene();
+    debugLog("wrist: ", g_leftWristRot);
   };
 }
 
@@ -311,67 +328,103 @@ function renderScene() {
   //TODO REMOVE gl.uniform4f(u_FragColor, 1.0, 1.0, 1.0, 1.0);
   //drawTriangle3D([-1.0, 0.0, 0.0, -0.5, -1.0, 0.0, 0.0, 0.0, 0.0]);
 
-  // === PENGUIN ===
-  // colors are placeholders so the parts are visually distinct
+  const purple = [0.4, 0.3, 0.85, 1];
+  const white = [0.95, 0.95, 0.95, 1];
+  const darkEye = [0.1, 0.1, 0.15, 1];
+  const yellow = [1.0, 0.85, 0.25, 1];
 
-  // main body (back shell)
-  let body = new Cube();
-  body.color = [0.4, 0.3, 0.85, 1];
-  body.matrix.translate(-0.25, -0.5, 0.0);
-  body.matrix.scale(0.5, 1.0, 0.5);
-  body.render();
+  // main body
+  drawCube(
+    new Matrix4().translate(-0.25, -0.5, 0.0).scale(0.5, 1.0, 0.5),
+    purple,
+  );
 
-  // belly (white, sticks out front, lower portion)
-  let belly = new Cube();
-  belly.color = [0.95, 0.95, 0.95, 1];
-  belly.matrix.translate(-0.2, -0.55, -0.1);
-  belly.matrix.scale(0.4, 0.75, 0.15);
-  belly.render();
+  // front detail
+  drawCube(
+    new Matrix4().translate(-0.2, -0.55, -0.1).scale(0.4, 0.75, 0.15),
+    white,
+  );
 
-  // face panel (white square on upper front)
-  let face = new Cube();
-  face.color = [0.95, 0.95, 0.95, 1];
-  face.matrix.translate(-0.15, 0.1, -0.08);
-  face.matrix.scale(0.3, 0.28, 0.12);
-  face.render();
+  // face
+  drawCube(
+    new Matrix4().translate(-0.15, 0.1, -0.08).scale(0.3, 0.28, 0.12),
+    white,
+  );
 
-  // eye (small dark square inset on the face)
-  let eye = new Cube();
-  eye.color = [0.1, 0.1, 0.15, 1];
-  eye.matrix.translate(-0.04, 0.2, -0.12);
-  eye.matrix.scale(0.1, 0.1, 0.03);
-  eye.render();
+  // left eye
+  drawCube(
+    new Matrix4().translate(-0.14, 0.25, -0.12).scale(0.1, 0.1, 0.03),
+    darkEye,
+  );
 
-  // left arm/wing
-  let leftArm = new Cube();
-  leftArm.color = [0.4, 0.3, 0.85, 1];
-  leftArm.matrix.translate(-0.25, -0.2, 0.05);
-  leftArm.matrix.rotate(g_globalRot, 0, 0, 1);
-  leftArm.matrix.scale(0.1, 0.55, 0.4);
-  leftArm.matrix.translate(-1.0, 0, 0);
-  leftArm.render();
+  // left eye pupil
+  drawCube(
+    new Matrix4().translate(-0.14, 0.25, -0.12).scale(0.1, 0.1, 0.02),
+    white,
+  );
 
-  // right arm/wing
-  let rightArm = new Cube();
-  rightArm.color = [0.4, 0.3, 0.85, 1];
-  rightArm.matrix.translate(0.25, -0.2, 0.05);
-  rightArm.matrix.rotate(-g_globalRot, 0, 0, 1);
-  rightArm.matrix.scale(0.1, 0.55, 0.4);
-  rightArm.render();
+  // right eye
+  drawCube(
+    new Matrix4().translate(0.04, 0.25, -0.12).scale(0.1, 0.1, 0.03),
+    darkEye,
+  );
 
-  // left foot (yellow, sticks out front)
-  let leftFoot = new Cube();
-  leftFoot.color = [1.0, 0.85, 0.25, 1];
-  leftFoot.matrix.translate(-0.2, -0.6, -0.2);
-  leftFoot.matrix.scale(0.15, 0.08, 0.25);
-  leftFoot.render();
+  // TODO beak
+
+  let leftShoulderFrame = new Matrix4()
+    .translate(-0.25, 0.3, 0.25)
+    .rotate(g_globalRot, 0, 0, 1);
+
+  // upper wing
+  drawCube(
+    new Matrix4(leftShoulderFrame)
+      .scale(0.1, 0.4, 0.4)
+      .translate(-0.5, -1, -0.5),
+    purple,
+  );
+
+  let leftElbowFrame = new Matrix4(leftShoulderFrame)
+    .translate(0, -0.4, 0)
+    .rotate(g_leftElbowRot, 0, 0, 1);
+
+  // forearm
+  drawCube(
+    new Matrix4(leftElbowFrame).scale(0.1, 0.3, 0.4).translate(-0.5, -1, -0.5),
+    purple,
+  );
+
+  let leftWristFrame = new Matrix4(leftElbowFrame)
+    .translate(0, -0.3, 0)
+    .rotate(g_leftWristRot, 0, 0, 1);
+
+  // hand/tip
+  drawCube(
+    new Matrix4(leftWristFrame)
+      .scale(0.12, 0.15, 0.4)
+      .translate(-0.5, -1, -0.5),
+    purple,
+  );
+
+  // right arm
+  drawCube(
+    new Matrix4()
+      .translate(0.25, -0.2, 0.05)
+      .rotate(-g_globalRot, 0, 0, 1)
+      .scale(0.1, 0.55, 0.4),
+    purple,
+  );
+
+  // left foot
+  drawCube(
+    new Matrix4().translate(-0.2, -0.6, -0.2).scale(0.15, 0.08, 0.25),
+    yellow,
+  );
 
   // right foot
-  let rightFoot = new Cube();
-  rightFoot.color = [1.0, 0.85, 0.25, 1];
-  rightFoot.matrix.translate(0.05, -0.6, -0.2);
-  rightFoot.matrix.scale(0.15, 0.08, 0.25);
-  rightFoot.render();
+  drawCube(
+    new Matrix4().translate(0.05, -0.6, -0.2).scale(0.15, 0.08, 0.25),
+    yellow,
+  );
 
   let K = 200.0;
   for (let i = 1; i < K; ++i) {

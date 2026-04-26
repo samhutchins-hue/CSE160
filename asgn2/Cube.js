@@ -26,12 +26,20 @@ function initCubeBuffer() {
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
 }
 
+function drawCube(matrix, color) {
+  let c = new Cube();
+  c.color = color;
+  c.matrix = matrix;
+  c.render();
+}
+
 class Cube {
   constructor() {
     this.type = "cube";
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
   }
+
   render() {
     let rgba = this.color;
 
