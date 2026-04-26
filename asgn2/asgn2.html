@@ -15,10 +15,15 @@
       Please use a browser that supports "canvas"
     </canvas>
 
-    <!-- <p id="numdot">XXX</p> -->
+    <p id="numdot">XXX</p>
     <div id="controls">
       <p>
         <button id="clearButton">Clear</button>
+      </p>
+
+      <p>
+        <button id="animOn">on</button>
+        <button id="animOff">off</button>
       </p>
       <p>
         <button id="pointButton">point</button>
@@ -84,7 +89,20 @@
           name="segment"
           value="5"
           min="0"
-          max="90"
+          max="360"
+          step="1"
+        />
+      </p>
+
+      <p>
+        rotation slider
+        <input
+          type="range"
+          id="rotSlider"
+          name="segment"
+          value="5"
+          min="0"
+          max="360"
           step="1"
         />
       </p>
