@@ -309,8 +309,6 @@ function updateAnimationAngles() {
     } else {
         g_globalRot = 0;
         g_bodySide = 0;
-        g_leftShoulderRot = 0;
-        g_rightShoulderRot = 0;
     }
 }
 
