@@ -15,7 +15,6 @@
 // Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
-
   uniform mat4 u_ModelMatrix;
 
   uniform mat4 u_GlobalRotateMatrix;
@@ -36,7 +35,7 @@ var FSHADER_SOURCE = `
   }
   `;
 
-const DEBUG = 1;
+const DEBUG = 0;
 const POINT = 0;
 const TRIANGLE = 1;
 const CIRCLE = 2;
@@ -52,12 +51,16 @@ let gl;
 
 // globals related to ui elements
 const colorScale = 100;
-let g_selectedColor = [1, 1, 1, 1];
-let g_selectedSize = 5;
-let g_selectedType = POINT;
 let g_globalAngle = 0;
 let g_globalRot = 0;
+let g_bodyTilt = 0;
+let g_bodySide = 0;
 let g_globalAnimation = false;
+let g_pokeAnimation = false;
+let g_pokeStartTime = 0;
+
+let g_globalX = 0;
+let g_globalY = 0;
 
 let g_leftShoulderRot = 0;
 let g_leftElbowRot = 0;
@@ -71,7 +74,6 @@ let a_Position;
 let u_FragColor;
 let u_ModelMatrix;
 let u_GlobalRotateMatrix;
-//let u_PointSize;
 
 let g_points = [];
 let g_colors = [];
@@ -109,13 +111,6 @@ function connectVariablesToGLSL() {
     return false;
   }
 
-  // // Get the storage location of u_PointSize
-  // u_PointSize = gl.getUniformLocation(gl.program, "u_PointSize");
-  // if (!u_PointSize) {
-  //   console.log("Failed to get the storage location of u_PointSize");
-  //   return false;
-  // }
-
   // Get the storage location of u_FragColor
   u_FragColor = gl.getUniformLocation(gl.program, "u_FragColor");
   if (!u_FragColor) {
@@ -150,21 +145,29 @@ function main() {
   if (!connectVariablesToGLSL()) return;
 
   // Register function (event handler) to be called on a mouse press
-  // canvas.onmousedown = click;
-  // canvas.onmousemove = function (ev) {
-  //     if (ev.buttons == 1) {
-  //         click(ev);
-  //     }
-  // };
+  //canvas.onmousedown = click;
+  canvas.onmousemove = function (ev) {
+    if (ev.buttons !== 1) return;
+    const [x, y] = convertCoordinatesToGL(ev);
+    g_globalX = -x * 180;
+    g_globalY = y * 180;
+  };
+  canvas.onclick = function (ev) {
+    if (ev.shiftKey && !g_pokeAnimation) {
+      g_pokeAnimation = true;
+      debugLog("anim: ", g_pokeAnimation);
+      g_pokeStartTime = g_seconds;
+    }
+  };
+
   addActionsForHtmlUI();
 
   // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearColor(0.53, 0.81, 0.98, 1.0);
 
-  // Clear <canvas>
-  //gl.clear(gl.COLOR_BUFFER_BIT);
   initCubeBuffer();
-  //renderScene();
+  initConeBuffer();
+
   requestAnimationFrame(tick);
 }
 
@@ -185,47 +188,6 @@ function addActionsForHtmlUI() {
     debugLog("anim: ", g_globalAnimation);
     renderScene();
   };
-  document.getElementById("clearButton").onclick = function () {
-    debugLog("clear button is working");
-    // remove all shapes
-    g_shapesList = [];
-    // Clear <canvas>
-    renderScene();
-  };
-  document.getElementById("pointButton").onclick = function () {
-    debugLog("set to point");
-    g_selectedType = POINT;
-  };
-  document.getElementById("triangleButton").onclick = function () {
-    debugLog("set to triangle");
-    g_selectedType = TRIANGLE;
-  };
-  document.getElementById("circleButton").onclick = function () {
-    debugLog("set to circle");
-    g_selectedType = CIRCLE;
-  };
-  document.getElementById("myPictureButton").onclick = function () {
-    drawMyPicture();
-    debugLog("drew my drawing");
-  };
-
-  // slider events
-  // document.getElementById("redSlider").oninput = function () {
-  //   g_selectedColor[0] = parseFloat(this.value) / colorScale
-  //   debugLog("r value: ", g_selectedColor[0])
-  // }
-  // document.getElementById("greenSlider").oninput = function () {
-  //   g_selectedColor[1] = parseFloat(this.value) / colorScale
-  //   debugLog("g value: ", g_selectedColor[1])
-  // }
-  // document.getElementById("blueSlider").oninput = function () {
-  //   g_selectedColor[2] = parseFloat(this.value) / colorScale
-  //   debugLog("b value: ", g_selectedColor[2])
-  // }
-  // document.getElementById("sizeSlider").oninput = function () {
-  //   g_selectedSize = parseFloat(this.value)
-  //   debugLog("size value: ", g_selectedSize)
-  // }
 
   document.getElementById("angleSlider").oninput = function () {
     g_globalAngle = parseFloat(this.value);
@@ -268,47 +230,6 @@ function addActionsForHtmlUI() {
   };
 }
 
-function click(ev) {
-  let [x, y] = convertCoordinatesToGL(ev);
-
-  // create and store the new point
-  let point;
-  if (g_selectedType == POINT) {
-    point = new Point();
-  } else if (g_selectedType == TRIANGLE) {
-    point = new Triangle();
-  } else {
-    point = new Circle();
-  }
-  point.position = [x, y];
-  point.color = g_selectedColor.slice();
-  point.size = g_selectedSize;
-  point.segments = g_selectedSegment;
-  g_shapesList.push(point);
-
-  // g_points.push([x, y]);
-
-  // debugLog("color being pushed: ", g_selectedColor);
-  // g_colors.push(g_selectedColor.slice());
-
-  // debugLog("size being pushed: ", g_selectedSize);
-  // g_sizes.push(g_selectedSize);
-
-  // Store the coordinates to g_points array
-  // if (x >= 0.0 && y >= 0.0) {
-  //     // First quadrant
-  //     g_colors.push([1.0, 0.0, 0.0, 1.0]); // Red
-  // } else if (x < 0.0 && y < 0.0) {
-  //     // Third quadrant
-  //     g_colors.push([0.0, 1.0, 0.0, 1.0]); // Green
-  // } else {
-  //     // Others
-  //     g_colors.push([1.0, 1.0, 1.0, 1.0]); // White
-  // }
-
-  renderScene();
-}
-
 function convertCoordinatesToGL(ev) {
   var x = ev.clientX; // x coordinate of a mouse pointer
   var y = ev.clientY; // y coordinate of a mouse pointer
@@ -341,12 +262,27 @@ function tick() {
 }
 
 function updateAnimationAngles() {
-  if (g_globalAnimation) {
+  if (g_pokeAnimation) {
+    const t = (g_seconds - g_pokeStartTime) / 0.5;
+    debugLog(t);
+    if (t >= 1) {
+      debugLog("poke should not be active");
+      g_pokeAnimation = false;
+      g_bodyTilt = 0;
+    } else {
+      g_bodyTilt = (1 - Math.pow(1 - t, 3)) * 90;
+    }
+  } else if (g_globalAnimation) {
     g_globalRot = 45 * Math.sin(g_seconds);
+    g_bodyTilt = g_globalRot / 2;
+    g_leftShoulderRot = (1 - Math.pow(1 - g_seconds, 3)) * 90;
+    g_rightShoulderRot = Math.min(45 * Math.sin(g_seconds), 90) + 10;
+  } else {
+    g_globalRot = 0;
   }
 }
 
-const bodyM = new Matrix4();
+bodyM = new Matrix4();
 
 const purple = [0.4, 0.3, 0.85, 1];
 const white = [0.95, 0.95, 0.95, 1];
@@ -387,30 +323,47 @@ function drawWing(rootM, shoulderRot, elbowRot, wristRot) {
 }
 
 function renderScene() {
+  // TODO maybe remove if not rebinding buffer anywhere else
+  gl.bindBuffer(gl.ARRAY_BUFFER, g_coneBuffer);
+  gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+
   // pass the matrix to u_ModelMatrix attribute
-  var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
+  var globalRotMat = new Matrix4()
+    .rotate(g_globalY, 1, 0, 0)
+    .rotate(g_globalX, 0, 1, 0)
+    .rotate(g_globalAngle, 0, 1, 0)
+    .scale(0.6, 0.6, 0.6);
   gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // TODO maybe remove if not rebinding buffer anywhere else
-  gl.bindBuffer(gl.ARRAY_BUFFER, g_cubeBuffer);
-  gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+  // floor
+  drawCube(
+    new Matrix4()
+      .translate(0, -0.1, 0)
+      .translate(-1, 0, -2)
+      .translate(-1, 0, -2)
+      .translate(-1, -1, 0)
+      .scale(40, 0.5, 40),
+    white,
+  );
 
-  // TODO: add shapes list later
-  // let len = g_shapesList.length;
-  // for (var i = 0; i < len; i++) { g_shapesList[i].render();
-  // }
-
-  //TODO REMOVE gl.uniform4f(u_FragColor, 1.0, 1.0, 1.0, 1.0);
-  //drawTriangle3D([-1.0, 0.0, 0.0, -0.5, -1.0, 0.0, 0.0, 0.0, 0.0]);
-
-  // root of the penguin's local coordinate system. tilt/scale/translate
-  // the whole creature by changing this one matrix.
+  bodyM = bodyM
+    .setIdentity()
+    .translate(0, -0.6, 0)
+    .rotate(g_bodyTilt, 1, 0, 0)
+    .rotate(g_bodySide, 0, 1, 0)
+    .translate(0, 0.6, 0);
 
   // main body
   drawCube(
-    new Matrix4(bodyM).translate(-0.25, -0.5, 0.0).scale(0.5, 1.0, 0.5),
+    new Matrix4(bodyM).translate(-0.25, -0.5, 0.0).scale(0.5, 0.8, 0.5),
+    blue,
+  );
+
+  // head
+  drawCube(
+    new Matrix4(bodyM).translate(-0.25, 0.1, 0).scale(0.5, 0.5, 0.5),
     blue,
   );
 
@@ -450,7 +403,15 @@ function renderScene() {
     white,
   );
 
-  // TODO beak
+  // beak
+  drawCone(
+    new Matrix4(bodyM)
+      .translate(0, 0.3, -0.08)
+      .rotate(-90, 1, 0, 0)
+      .scale(0.05, 0.1, 0.05)
+      .translate(-0.5, 0, -0.5),
+    yellow,
+  );
 
   const leftWingM = new Matrix4(bodyM);
   const rightWingM = new Matrix4(bodyM).scale(-1, 1, 1);
@@ -458,26 +419,23 @@ function renderScene() {
   drawWing(leftWingM, g_leftShoulderRot, g_leftElbowRot, g_leftWristRot);
   drawWing(rightWingM, -g_rightShoulderRot, -g_rightElbowRot, -g_rightWristRot);
 
-  // upper right wing
-
-  // // right arm
-  // drawCube(
-  //   new Matrix4()
-  //     .translate(0.25, -0.2, 0.05)
-  //     .rotate(-g_globalRot, 0, 0, 1)
-  //     .scale(0.1, 0.55, 0.4),
-  //   yellow,
-  // );
-
   // left foot
   drawCube(
-    new Matrix4(bodyM).translate(-0.2, -0.6, -0.2).scale(0.15, 0.08, 0.25),
+    new Matrix4(bodyM)
+
+      .rotate(g_globalRot / 10, 1, 0, 0)
+      .translate(-0.2, -0.6, -0.2)
+      .scale(0.15, 0.08, 0.25),
     yellow,
   );
 
   // right foot
   drawCube(
-    new Matrix4(bodyM).translate(0.05, -0.6, -0.2).scale(0.15, 0.08, 0.25),
+    new Matrix4(bodyM)
+
+      .rotate(g_globalRot / 10, 1, 0, 0)
+      .translate(0.05, -0.6, -0.2)
+      .scale(0.15, 0.08, 0.25),
     yellow,
   );
 
