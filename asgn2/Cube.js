@@ -1,3 +1,5 @@
+"use strict";
+
 let g_cubeBuffer = null;
 let front = 0;
 let back = 6;
@@ -36,7 +38,7 @@ function initCubeBuffer() {
 }
 
 function setColor(x, color) {
-  [r, g, b, a] = color;
+  const [r, g, b, a] = color;
   gl.uniform4f(u_FragColor, r * x, g * x, b * x, a);
 }
 
