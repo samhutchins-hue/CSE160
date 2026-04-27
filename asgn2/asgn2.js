@@ -157,6 +157,9 @@ function main() {
       g_pokeAnimation = true;
       debugLog("anim: ", g_pokeAnimation);
       g_pokeStartTime = g_seconds;
+    } else if (ev.shiftKey && g_pokeAnimation) {
+      g_pokeAnimation = false;
+      debugLog("anim: ", g_pokeAnimation);
     }
   };
 
@@ -263,22 +266,28 @@ function tick() {
 
 function updateAnimationAngles() {
   if (g_pokeAnimation) {
-    const t = (g_seconds - g_pokeStartTime) / 0.5;
+    const t = (g_seconds - g_pokeStartTime) / 0.6;
     debugLog(t);
-    if (t >= 1) {
+    if (t >= 4) {
       debugLog("poke should not be active");
       g_pokeAnimation = false;
       g_bodyTilt = 0;
     } else {
-      g_bodyTilt = (1 - Math.pow(1 - t, 3)) * 90;
+      if (g_bodyTilt < 90) {
+        g_bodyTilt = (1 - Math.pow(1 - t, 3)) * 90;
+      }
     }
   } else if (g_globalAnimation) {
-    g_globalRot = 45 * Math.sin(g_seconds);
-    g_bodyTilt = g_globalRot / 2;
-    g_leftShoulderRot = (1 - Math.pow(1 - g_seconds, 3)) * 90;
-    g_rightShoulderRot = Math.min(45 * Math.sin(g_seconds), 90) + 10;
+    const waddle = Math.sin(g_seconds * 4);
+    g_bodySide = 15 * waddle;
+    const flap = 20 + 10 * Math.abs(waddle);
+    g_leftShoulderRot = -flap;
+    g_rightShoulderRot = flap;
   } else {
     g_globalRot = 0;
+    g_bodySide = 0;
+    g_leftShoulderRot = 0;
+    g_rightShoulderRot = 0;
   }
 }
 
@@ -352,7 +361,7 @@ function renderScene() {
     .setIdentity()
     .translate(0, -0.6, 0)
     .rotate(g_bodyTilt, 1, 0, 0)
-    .rotate(g_bodySide, 0, 1, 0)
+    .rotate(g_bodySide, 0, 0, 1)
     .translate(0, 0.6, 0);
 
   // main body
@@ -408,7 +417,7 @@ function renderScene() {
     new Matrix4(bodyM)
       .translate(0, 0.3, -0.08)
       .rotate(-90, 1, 0, 0)
-      .scale(0.05, 0.1, 0.05)
+      .scale(0.1, 0.25, 0.05)
       .translate(-0.5, 0, -0.5),
     yellow,
   );
