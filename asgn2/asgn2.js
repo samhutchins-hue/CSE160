@@ -67,6 +67,14 @@ let g_mousePosY = 0;
 let g_baseRotX = 0;
 let g_baseRotY = 0;
 
+// matrices
+const g_scratchM = new Matrix4();
+const g_birdRootM = new Matrix4();
+const g_jointM = new Matrix4();
+const g_bodyM = new Matrix4();
+const g_scratchRotM = new Matrix4();
+// join rotations
+
 let g_leftShoulderRot = 0;
 let g_leftElbowRot = 0;
 let g_leftWristRot = 0;
@@ -80,7 +88,7 @@ let u_FragColor;
 let u_ModelMatrix;
 let u_GlobalRotateMatrix;
 
-const bodyM = new Matrix4();
+const g_rightWingRootM = new Matrix4();
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -311,146 +319,57 @@ const darkEye = [0.1, 0.1, 0.15, 1];
 const yellow = [1.0, 0.85, 0.25, 1];
 const blue = [0.035, 0.102, 0.184, 1];
 
-function drawWing(rootM, shoulderRot, elbowRot, wristRot) {
-  let ShoulderM = new Matrix4(rootM)
-    .translate(-0.25, 0.3, 0.25)
-    .rotate(shoulderRot, 0, 0, 1);
-
-  // upper wing
-  drawCube(
-    new Matrix4(ShoulderM).scale(0.1, 0.4, 0.4).translate(-0.5, -1, -0.5),
-    blue,
-  );
-
-  let ElbowM = new Matrix4(ShoulderM)
-    .translate(0, -0.4, 0)
-    .rotate(elbowRot, 0, 0, 1);
-
-  // forearm
-  drawCube(
-    new Matrix4(ElbowM).scale(0.1, 0.3, 0.4).translate(-0.5, -1, -0.5),
-    blue,
-  );
-
-  let WristM = new Matrix4(ElbowM)
-    .translate(0, -0.3, 0)
-    .rotate(wristRot, 0, 0, 1);
-
-  // hand/tip
-  drawCube(
-    new Matrix4(WristM).scale(0.12, 0.15, 0.4).translate(-0.5, -1, -0.5),
-    blue,
-  );
-}
-
 function renderScene() {
   // TODO maybe remove if not rebinding buffer anywhere else
   gl.bindBuffer(gl.ARRAY_BUFFER, g_coneBuffer);
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
 
   // pass the matrix to u_ModelMatrix attribute
-  var globalRotMat = new Matrix4()
+  g_scratchRotM
+    .setIdentity()
     .rotate(g_globalY, 1, 0, 0)
     .rotate(g_globalX, 0, 1, 0)
     .rotate(g_globalAngle, 0, 1, 0)
-    .scale(0.6, 0.6, 0.6);
-  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
+    .scale(0.2, 0.2, 0.2);
+  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_scratchRotM.elements);
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // floor
-  drawCube(new Matrix4().translate(-3, -1.1, -4).scale(40, 0.5, 40), white);
-
-  bodyM
-    .setIdentity()
-    .translate(0, -0.6, 0)
-    .rotate(g_bodyTilt, 1, 0, 0)
-    .rotate(g_bodySide, 0, 0, 1)
-    .translate(0, 0.6, 0);
-
-  // main body
-  drawCube(
-    new Matrix4(bodyM).translate(-0.25, -0.5, 0.0).scale(0.5, 0.8, 0.5),
-    blue,
+  g_scratchM.setIdentity().translate(-3, -1.1, -4).scale(40, 0.5, 40);
+  drawCube(g_scratchM, white);
+  const bird1 = makeBird(0, 0, 0);
+  drawBird(
+    bird1.rootM,
+    bird1.tilt,
+    bird1.side,
+    bird1.shoulderL,
+    bird1.elbowL,
+    bird1.wristL,
+    bird1.shoulderR,
+    bird1.elbowR,
+    bird1.wristR,
   );
 
-  // head
-  drawCube(
-    new Matrix4(bodyM).translate(-0.25, 0.1, 0).scale(0.5, 0.5, 0.5),
-    blue,
+  const bird2 = makeBird(1, 0, 0);
+  drawBird(
+    bird2.rootM,
+    bird2.tilt,
+    bird2.side,
+    bird2.shoulderL,
+    bird2.elbowL,
+    bird2.wristL,
+    bird2.shoulderR,
+    bird2.elbowR,
+    bird2.wristR,
   );
 
-  // front detail
-  drawCube(
-    new Matrix4(bodyM).translate(-0.2, -0.55, -0.1).scale(0.4, 0.9, 0.15),
-    white,
-  );
-
-  // face
-  drawCube(
-    new Matrix4(bodyM).translate(-0.15, 0.1, -0.08).scale(0.3, 0.38, 0.12),
-    white,
-  );
-
-  // left eye
-  drawCube(
-    new Matrix4(bodyM).translate(-0.14, 0.3, -0.12).scale(0.1, 0.1, 0.03),
-    darkEye,
-  );
-
-  // left eye pupil
-  drawCube(
-    new Matrix4(bodyM).translate(-0.14, 0.35, -0.13).scale(0.04, 0.04, 0.02),
-    white,
-  );
-
-  // right eye
-  drawCube(
-    new Matrix4(bodyM).translate(0.04, 0.3, -0.12).scale(0.1, 0.1, 0.03),
-    darkEye,
-  );
-
-  // right eye pupil
-  drawCube(
-    new Matrix4(bodyM).translate(0.04, 0.35, -0.13).scale(0.04, 0.04, 0.02),
-    white,
-  );
-
-  // beak
-  drawCone(
-    new Matrix4(bodyM)
-      .translate(0, 0.3, -0.08)
-      .rotate(-90, 1, 0, 0)
-      .scale(0.1, 0.25, 0.05)
-      .translate(-0.5, 0, -0.5),
-    yellow,
-  );
-
-  const leftWingM = new Matrix4(bodyM);
-  const rightWingM = new Matrix4(bodyM).scale(-1, 1, 1);
-
-  drawWing(leftWingM, g_leftShoulderRot, g_leftElbowRot, g_leftWristRot);
-  drawWing(rightWingM, -g_rightShoulderRot, -g_rightElbowRot, -g_rightWristRot);
-
-  // left foot
-  drawCube(
-    new Matrix4(bodyM)
-
-      .rotate(g_globalRot / 10, 1, 0, 0)
-      .translate(-0.2, -0.6, -0.2)
-      .scale(0.15, 0.08, 0.25),
-    yellow,
-  );
-
-  // right foot
-  drawCube(
-    new Matrix4(bodyM)
-
-      .rotate(g_globalRot / 10, 1, 0, 0)
-      .translate(0.05, -0.6, -0.2)
-      .scale(0.15, 0.08, 0.25),
-    yellow,
-  );
+  // bodyM
+  //   .setIdentity()
+  //   .translate(0, -0.6, 0)
+  //   .rotate(g_bodyTilt, 1, 0, 0)
+  //   .rotate(g_bodySide, 0, 0, 1)
+  //   .translate(0, 0.6, 0);
 
   // let K = 200.0;
   // for (let i = 1; i < K; ++i) {
