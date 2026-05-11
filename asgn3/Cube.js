@@ -79,12 +79,14 @@ function setColor(x, color) {
 
 function drawCube(matrix, color, textureNum = -1) {
     gl.uniform1i(u_whichTexture, textureNum);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, g_cubeBuffer);
     gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
     gl.uniformMatrix4fv(u_ModelMatrix, false, matrix.elements);
 
     gl.uniform4f(u_FragColor, color[0], color[1], color[2], color[3]);
     gl.drawArrays(gl.TRIANGLES, 0, 32);
+
     // setColor(1, color);
     // gl.drawArrays(gl.TRIANGLES, front, 6);
 

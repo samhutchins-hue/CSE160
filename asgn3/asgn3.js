@@ -1,10 +1,5 @@
 "use strict";
 
-// NOTE: model_matrix: cube location,
-// NOTE: global_rotate_matrix: global rotation
-// NOTE:
-// TODO: view_matrix set with lookat command
-// TODO: projection_matrix set with gl_perspective command
 // Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
@@ -30,12 +25,15 @@ var FSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
+  uniform sampler2D u_Sampler1;
   uniform int u_whichTexture;
   void main() {
     if (u_whichTexture == -1) {
       gl_FragColor = u_FragColor;
     } else if (u_whichTexture == 0) {
       gl_FragColor = texture2D(u_Sampler0, v_UV);
+    } else if (u_whichTexture == 1) {
+      gl_FragColor = texture2D(u_Sampler1, v_UV);
     } else {
       gl_FragColor = u_FragColor;
     }
@@ -43,9 +41,6 @@ var FSHADER_SOURCE = `
   `;
 
 const DEBUG = 1;
-const POINT = 0;
-const TRIANGLE = 1;
-const CIRCLE = 2;
 
 function debugLog(...args) {
     if (DEBUG >= 1) console.log(...args);
@@ -68,23 +63,12 @@ let g_pokeStartTime = 0;
 
 let g_camera = null;
 
-let g_globalX = 0;
-let g_globalY = 0;
+// let g_globalX = 0;
+// let g_globalY = 0;
 let g_mousePosX = 0;
 let g_mousePosY = 0;
 let g_baseRotX = 0;
 let g_baseRotY = 0;
-
-let g_map = [];
-for (let i = 0; i < 32; ++i) {
-    g_map[i] = [];
-    for (let j = 0; j < 32; ++j) {
-        g_map[i][j] = 0;
-    }
-}
-g_map[0][1] = 1;
-g_map[0][0] = 2;
-g_map[1][0] = 3;
 
 // matrices
 const g_scratchM = new Matrix4();
@@ -105,6 +89,7 @@ let g_keys = {};
 
 let a_Position;
 let u_Sampler0;
+let u_Sampler1;
 let a_UV;
 let u_FragColor;
 let u_whichTexture;
@@ -125,7 +110,7 @@ function setupWebGL() {
     gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
 
     // TODO: remove
-    gl = WebGLDebugUtils.makeDebugContext(gl);
+    // gl = WebGLDebugUtils.makeDebugContext(gl);
     if (!gl) {
         console.log("Failed to get the rendering context for WebGL");
     }
@@ -192,6 +177,12 @@ function connectVariablesToGLSL() {
         console.log("Failed to get the storage location of u_Sampler0");
     }
 
+    // Get the storage location of u_Sampler1
+    u_Sampler1 = gl.getUniformLocation(gl.program, "u_Sampler1");
+    if (!u_Sampler1) {
+        console.log("Failed to get the storage location of u_Sampler1");
+    }
+
     u_whichTexture = gl.getUniformLocation(gl.program, "u_whichTexture");
     if (!u_whichTexture) {
         console.log("Failed to get the storage location of u_whichTexture");
@@ -216,9 +207,20 @@ function initTextures() {
     image.onload = function () {
         sendImageToTEXTURE0(image);
     };
-    image.src = "./img/uvCoords.png";
+    image.src = "./img/128x128/Gray/Prototype_Grid_Gray_03-128x128.png";
 
     // TODO: add more textures later
+
+    var image1 = new Image();
+    if (!image1) {
+        console.log("Failed to create the image object");
+        return false;
+    }
+    image1.src = "./img/blocks/slate.png";
+
+    image1.onload = function () {
+        sendImageToTEXTURE1(image1);
+    };
     return true;
 }
 
@@ -244,6 +246,28 @@ function sendImageToTEXTURE0(image) {
     gl.uniform1i(u_Sampler0, 0);
 }
 
+function sendImageToTEXTURE1(image) {
+    var texture = gl.createTexture();
+    if (!texture) {
+        console.log("Failed to create the texture object");
+        return false;
+    }
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+    // Enable texture unit0
+    gl.activeTexture(gl.TEXTURE1);
+    // Bind the texture object to the target
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // Set the texture parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // Set the texture image
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    // Set the texture unit 0 to the sampler
+    gl.uniform1i(u_Sampler1, 1);
+}
+
 function main() {
     if (!setupWebGL()) return;
     if (!connectVariablesToGLSL()) return;
@@ -266,43 +290,43 @@ function main() {
         debugLog("key up");
     });
 
-    // Register function (event handler) to be called on a mouse press
-    canvas.onmousedown = function (ev) {
-        const [x, y] = convertCoordinatesToGL(ev);
-        g_mousePosX = x;
-        g_mousePosY = y;
-        g_baseRotX = g_globalX;
-        g_baseRotY = g_globalY;
-    };
-    canvas.onmousemove = function (ev) {
-        if (ev.buttons !== 1) return;
-        const [x, y] = convertCoordinatesToGL(ev);
+    canvas.onmousemove = function (ev) {};
 
-        // first calculate the distance the mouse has moved since the last update
-        // then update the rotation angles based on that distance
-        const deltaX = x - g_mousePosX;
-        const deltaY = y - g_mousePosY;
+    canvas.addEventListener("click", async () => {
+        if (!document.pointerLockElement) {
+            try {
+                await canvas.requestPointerLock({
+                    unadjustedMovement: true,
+                });
+            } catch (error) {
+                if (error.name === "NotSupportedError") {
+                    // Some platforms may not support unadjusted movement.
+                    await canvas.requestPointerLock();
+                } else {
+                    throw error;
+                }
+            }
+        }
+    });
 
-        //
-        g_globalX = g_baseRotX + -deltaX * 180;
-        g_globalY = g_baseRotY + deltaY * 180;
-    };
-    // canvas.onclick = function (ev) {
-    //     if (ev.shiftKey && !g_pokeAnimation) {
-    //         g_pokeAnimation = true;
-    //         debugLog("anim: ", g_pokeAnimation);
-    //         g_pokeStartTime = g_seconds;
-    //     } else if (ev.shiftKey && g_pokeAnimation) {
-    //         g_pokeAnimation = false;
-    //         g_bodyTilt = 0;
-    //         debugLog("anim: ", g_pokeAnimation);
-    //     }
-    // };
+    document.addEventListener("pointerlockchange", lockChangeAlert, false);
 
-    addActionsForHtmlUI();
+    function lockChangeAlert() {
+        if (document.pointerLockElement === canvas) {
+            console.log("The pointer lock status is now locked");
+            document.addEventListener("mousemove", updatePosition, false);
+        } else {
+            console.log("The pointer lock status is now unlocked");
+            document.removeEventListener("mousemove", updatePosition, false);
+        }
+    }
 
-    // Specify the color for clearing <canvas>
-    // gl.clearColor(0.53, 0.81, 0.98, 1.0);
+    function updatePosition(e) {
+        const sensitivity = 0.2;
+        g_camera.panBy(-e.movementX * sensitivity);
+        g_camera.pitchBy(-e.movementY * sensitivity);
+    }
+
     gl.clearColor(0, 0, 0, 1.0);
 
     initCubeBuffers();
@@ -316,61 +340,6 @@ function main() {
 let g_startTime = performance.now() / 1000.0;
 let g_seconds = performance.now() / 1000.0 - g_startTime;
 let g_lastFrameTime = performance.now();
-
-// set up actions for the HTML UI elements
-function addActionsForHtmlUI() {
-    // button events
-    document.getElementById("animOn").onclick = function () {
-        g_globalAnimation = true;
-        debugLog("anim: ", g_globalAnimation);
-        renderScene();
-    };
-    document.getElementById("animOff").onclick = function () {
-        g_globalAnimation = false;
-        debugLog("anim: ", g_globalAnimation);
-        renderScene();
-    };
-
-    document.getElementById("angleSlider").oninput = function () {
-        g_globalAngle = parseFloat(this.value);
-        renderScene();
-        debugLog("segment step: ", g_globalAngle);
-    };
-
-    // left wing sliders
-    document.getElementById("leftShoulderSlider").oninput = function () {
-        g_leftShoulderRot = parseFloat(this.value);
-        renderScene();
-        debugLog("shoulder: ", g_leftShoulderRot);
-    };
-    document.getElementById("leftElbowSlider").oninput = function () {
-        g_leftElbowRot = parseFloat(this.value);
-        renderScene();
-        debugLog("elbow: ", g_leftElbowRot);
-    };
-    document.getElementById("leftWristSlider").oninput = function () {
-        g_leftWristRot = parseFloat(this.value);
-        renderScene();
-        debugLog("wrist: ", g_leftWristRot);
-    };
-
-    // right wing sliders
-    document.getElementById("rightShoulderSlider").oninput = function () {
-        g_rightShoulderRot = parseFloat(this.value);
-        renderScene();
-        debugLog("shoulder: ", g_rightShoulderRot);
-    };
-    document.getElementById("rightElbowSlider").oninput = function () {
-        g_rightElbowRot = parseFloat(this.value);
-        renderScene();
-        debugLog("elbow: ", g_rightElbowRot);
-    };
-    document.getElementById("rightWristSlider").oninput = function () {
-        g_rightWristRot = parseFloat(this.value);
-        renderScene();
-        debugLog("wrist: ", g_rightWristRot);
-    };
-}
 
 function convertCoordinatesToGL(ev) {
     var x = ev.clientX; // x coordinate of a mouse pointer
@@ -388,21 +357,19 @@ function tick() {
     const frameMS = now - g_lastFrameTime;
     g_lastFrameTime = now;
 
-    g_seconds = performance.now() / 1000.0 - g_startTime;
-    verboseLog(g_seconds);
-
+    const baseSpeed = (0.1 / 20) * frameMS;
     if (g_keys["w"]) {
-        g_camera.moveForward();
+        g_camera.moveForward(baseSpeed);
         debugLog("forward");
     }
     if (g_keys["a"]) {
-        g_camera.moveLeft();
+        g_camera.moveLeft(baseSpeed);
     }
     if (g_keys["s"]) {
-        g_camera.moveBackward();
+        g_camera.moveBackward(baseSpeed);
     }
     if (g_keys["d"]) {
-        g_camera.moveRight();
+        g_camera.moveRight(baseSpeed);
     }
     if (g_keys["e"]) {
         g_camera.panRight();
@@ -410,6 +377,9 @@ function tick() {
     if (g_keys["q"]) {
         g_camera.panLeft();
     }
+
+    g_seconds = performance.now() / 1000.0 - g_startTime;
+    verboseLog(g_seconds);
 
     // update animation angles
     updateAnimationAngles();
@@ -457,6 +427,18 @@ const darkEye = [0.1, 0.1, 0.15, 1];
 const yellow = [1.0, 0.85, 0.25, 1];
 const blue = [0.035, 0.102, 0.184, 1];
 
+let g_map = [];
+for (let i = 0; i < 32; ++i) {
+    g_map[i] = [];
+    for (let j = 0; j < 32; ++j) {
+        g_map[i][j] = 1;
+    }
+}
+
+g_map[0][1] = 1;
+g_map[0][0] = 2;
+g_map[1][0] = 3;
+
 let g_walls = [];
 function initWalls() {
     for (let i = 0; i < 32; ++i) {
@@ -471,84 +453,29 @@ function initWalls() {
 }
 
 function drawMap() {
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
     for (let i = 0; i < g_walls.length; ++i) {
-        drawCube(g_walls[i], [1.0, 0, 0, 1.0], 0);
+        drawCube(g_walls[i], [1.0, 0, 0, 1.0], 1);
     }
 }
 
 function renderScene() {
-    // TODO CONE
-    //gl.bindBuffer(gl.ARRAY_BUFFER, g_coneBuffer);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+    // gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
 
-    // pass the matrix to u_ModelMatrix attribute
     g_scratchRotM.setIdentity();
-    // .setIdentity()
-    // .rotate(g_globalY, 1, 0, 0)
-    // .rotate(g_globalX, 0, 1, 0)
-    // .rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_scratchRotM.elements);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // ground
     // g_scratchM.setIdentity().translate(-3, -1.1, -4).scale(40, 0.5, 40);
-    g_scratchM
-        .setIdentity()
-        .translate(0, -1, 0)
-        .scale(1000, 0.1, 1000)
-        .translate(-0.5, 0, -0.5);
-    drawCube(g_scratchM, white, 0);
+    // g_scratchM
+    //     .scale(1000, 0.1, 1000)
+    //     .translate(-0.5, 0, -0.5);
+    // drawCube(g_scratchM, white, 0);
 
     g_scratchM.setIdentity().scale(50, 50, 50).translate(-0.5, -0.5, -0.5);
     drawCube(g_scratchM, blue, -1);
-
     drawMap();
-
-    // const bird1 = makeBird(0, 0, 0);
-    // drawBird(
-    //     bird1.rootM,
-    //     bird1.tilt,
-    //     bird1.side,
-    //     bird1.shoulderL,
-    //     bird1.elbowL,
-    //     bird1.wristL,
-    //     bird1.shoulderR,
-    //     bird1.elbowR,
-    //     bird1.wristR,
-    // );
-
-    // const bird2 = makeBird(1, 0, 0);
-    // drawBird(
-    //     bird2.rootM,
-    //     bird2.tilt,
-    //     bird2.side,
-    //     bird2.shoulderL,
-    //     bird2.elbowL,
-    //     bird2.wristL,
-    //     bird2.shoulderR,
-    //     bird2.elbowR,
-    //     bird2.wristR,
-    // );
-
-    // bodyM
-    //   .setIdentity()
-    //   .translate(0, -0.6, 0)
-    //   .rotate(g_bodyTilt, 1, 0, 0)
-    //   .rotate(g_bodySide, 0, 0, 1)
-    //   .translate(0, 0.6, 0);
-
-    // let K = 200.0;
-    // for (let i = 1; i < K; ++i) {
-    //   drawCube(
-    //     new Matrix4()
-    //       .translate(-0.8, (1.9 * i) / K - 1.0, 0)
-    //       .rotate(g_seconds * 100, 1, 1, 1)
-    //       .scale(0.1, 0.5 / K, 1.0 / K),
-    //     white,
-    //   );
-    // }
 }
 
 function sendTextToHTML(text, htmlID) {

@@ -8,7 +8,7 @@
   <link rel="icon" href="data:," />
   <p>Sam Hutchins</p>
   <p>sthutchi@ucsc.edu</p>
-  <p>Notes to Grader: shift+click to poke the penguin</p>
+  <p>Notes to Grader: click canvas to lock pointer</p>
   <p>gunter</p>
 
   <body onload="main()">
@@ -17,103 +17,6 @@
     </canvas>
 
     <p id="numdot">XXX</p>
-    <div id="controls">
-      <p>
-        <button id="animOn">on</button>
-        <button id="animOff">off</button>
-      </p>
-
-      <p>
-        camera angle
-        <input
-          type="range"
-          id="angleSlider"
-          name="segment"
-          value="5"
-          min="0"
-          max="360"
-          step="1"
-        />
-      </p>
-
-      <p>
-        left shoulder
-        <input
-          type="range"
-          id="leftShoulderSlider"
-          name="segment"
-          value="0"
-          min="-90"
-          max="0"
-          step="1"
-        />
-      </p>
-
-      <p>
-        left elbow
-        <input
-          type="range"
-          id="leftElbowSlider"
-          name="elbow"
-          value="0"
-          min="-90"
-          max="0"
-          step="1"
-        />
-      </p>
-
-      <p>
-        left wrist
-        <input
-          type="range"
-          id="leftWristSlider"
-          name="wrist"
-          value="0"
-          min="-90"
-          max="90"
-          step="1"
-        />
-      </p>
-
-      <p>
-        right shoulder
-        <input
-          type="range"
-          id="rightShoulderSlider"
-          name="segment"
-          value="0"
-          min="0"
-          max="90"
-          step="1"
-        />
-      </p>
-
-      <p>
-        right elbow
-        <input
-          type="range"
-          id="rightElbowSlider"
-          name="elbow"
-          value="0"
-          min="-90"
-          max="90"
-          step="1"
-        />
-      </p>
-
-      <p>
-        right wrist
-        <input
-          type="range"
-          id="rightWristSlider"
-          name="wrist"
-          value="0"
-          min="-90"
-          max="90"
-          step="1"
-        />
-      </p>
-    </div>
 
     <script src="lib/webgl-utils.js"></script>
     <script src="lib/webgl-debug.js"></script>
