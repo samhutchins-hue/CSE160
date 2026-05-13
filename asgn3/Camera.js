@@ -4,11 +4,11 @@ class Camera {
     constructor() {
         this.fov = 90;
         // TODO: remove
-        this.eye = new Vector3([0, 0, 0]);
-        this.at = new Vector3([0, 0, -1]);
+        this.eye = new Vector3([1.5, 1.8, 1.5]);
+        this.at = new Vector3([1.5, 1.8, 2.5]);
         this.up = new Vector3([0, 1, 0]);
-        this.collisionOn = false;
-        this.noclipOn = true;
+        this.collisionOn = true;
+        this.noclipOn = false;
 
         this.viewMatrix = new Matrix4();
         this.viewMatrix.setLookAt(

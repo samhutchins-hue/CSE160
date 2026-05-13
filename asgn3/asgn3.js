@@ -25,6 +25,8 @@ var FSHADER_SOURCE = `
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
+  uniform sampler2D u_Sampler2;
+  uniform sampler2D u_Sampler3;
   uniform int u_whichTexture;
   void main() {
     if (u_whichTexture == -1) {
@@ -33,6 +35,10 @@ var FSHADER_SOURCE = `
       gl_FragColor = texture2D(u_Sampler0, v_UV);
     } else if (u_whichTexture == 1) {
       gl_FragColor = texture2D(u_Sampler1, v_UV);
+    } else if (u_whichTexture == 2) {
+      gl_FragColor = texture2D(u_Sampler2, v_UV);
+    } else if (u_whichTexture == 3) {
+      gl_FragColor = texture2D(u_Sampler3, v_UV);
     } else {
       gl_FragColor = u_FragColor;
     }
@@ -60,6 +66,8 @@ let g_keys = {};
 let a_Position;
 let u_Sampler0;
 let u_Sampler1;
+let u_Sampler2;
+let u_Sampler3;
 let a_UV;
 let u_FragColor;
 let u_whichTexture;
@@ -78,7 +86,7 @@ function setupWebGL() {
         console.log("Failed to get the rendering context for WebGL");
     }
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
+    // gl.enable(gl.CULL_FACE);
 
     return true;
 }
@@ -135,6 +143,18 @@ function connectVariablesToGLSL() {
         console.log("Failed to get the storage location of u_Sampler1");
     }
 
+    // Get the storage location of u_Sampler2
+    u_Sampler2 = gl.getUniformLocation(gl.program, "u_Sampler2");
+    if (!u_Sampler2) {
+        console.log("Failed to get the storage location of u_Sampler2");
+    }
+
+    // Get the storage location of u_Sampler3
+    u_Sampler3 = gl.getUniformLocation(gl.program, "u_Sampler3");
+    if (!u_Sampler3) {
+        console.log("Failed to get the storage location of u_Sampler3");
+    }
+
     u_whichTexture = gl.getUniformLocation(gl.program, "u_whichTexture");
     if (!u_whichTexture) {
         console.log("Failed to get the storage location of u_whichTexture");
@@ -150,29 +170,46 @@ function connectVariablesToGLSL() {
 
 // TODO: implement multiple textures with data structure + lambda function
 function initTextures() {
-    var image = new Image();
-    if (!image) {
+    var image0 = new Image();
+    if (!image0) {
         console.log("Failed to create the image object");
         return false;
     }
-    image.onload = function () {
-        sendImageToTEXTURE0(image);
+    image0.onload = function () {
+        sendImageToTEXTURE0(image0);
     };
-    // image.src = "./img/128x128/Gray/Prototype_Grid_Gray_03-128x128.png";
-    image.src = "./img/uvCoords.png";
-
-    // TODO: add more textures later
+    image0.src = "./img/blocks/dirt.png";
 
     var image1 = new Image();
     if (!image1) {
         console.log("Failed to create the image object");
         return false;
     }
-    image1.src = "./img/blocks/slate.png";
-
     image1.onload = function () {
         sendImageToTEXTURE1(image1);
     };
+    image1.src = "./img/blocks/cobblestone.png";
+
+    var image2 = new Image();
+    if (!image2) {
+        console.log("Failed to create the image object");
+        return false;
+    }
+    image2.onload = function () {
+        sendImageToTEXTURE2(image2);
+    };
+    image2.src = "./img/blocks/cobblestone_bricks.png";
+
+    var image3 = new Image();
+    if (!image3) {
+        console.log("Failed to create the image object");
+        return false;
+    }
+    image3.onload = function () {
+        sendImageToTEXTURE3(image3);
+    };
+    image3.src = "./img/blocks/cobblestone_bricks_mossy.png";
+
     return true;
 }
 
@@ -190,7 +227,7 @@ function sendImageToTEXTURE0(image) {
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     // Set the texture parameters
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     // Set the texture image
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
@@ -212,12 +249,46 @@ function sendImageToTEXTURE1(image) {
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     // Set the texture parameters
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     // Set the texture image
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
     // Set the texture unit 0 to the sampler
     gl.uniform1i(u_Sampler1, 1);
+}
+
+function sendImageToTEXTURE2(image) {
+    var texture = gl.createTexture();
+    if (!texture) {
+        console.log("Failed to create the texture object");
+        return false;
+    }
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    gl.uniform1i(u_Sampler2, 2);
+}
+
+function sendImageToTEXTURE3(image) {
+    var texture = gl.createTexture();
+    if (!texture) {
+        console.log("Failed to create the texture object");
+        return false;
+    }
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    gl.uniform1i(u_Sampler3, 3);
 }
 
 function main() {
@@ -280,6 +351,7 @@ function main() {
     gl.clearColor(0, 0, 0, 1.0);
 
     initCubeBuffers();
+    generateMaze();
     initWalls();
     // TODO: cone
     initConeBuffer();
@@ -348,49 +420,22 @@ const darkEye = [0.1, 0.1, 0.15, 1];
 const yellow = [1.0, 0.85, 0.25, 1];
 const blue = [0.035, 0.102, 0.184, 1];
 
-let g_map = [];
-for (let i = 0; i < 32; ++i) {
-    g_map[i] = [];
-    for (let j = 0; j < 32; ++j) {
-        // g_map[i][j] = Math.floor(Math.random() * 20);
-        g_map[i][j] = 0;
-    }
-}
-
-// g_map[0][1] = 1;
-g_map[0][0] = 1;
-g_map[1][0] = 2;
-
-let g_walls = [];
-function initWalls() {
-    for (let i = 0; i < 32; ++i) {
-        for (let j = 0; j < 32; ++j) {
-            const height = g_map[i][j];
-            for (let h = 0; h < height; ++h) {
-                const w = new Matrix4().translate(i, h, j);
-                g_walls.push(w);
-            }
-        }
-    }
-}
-
-function drawMap() {
-    for (let i = 0; i < g_walls.length; ++i) {
-        drawCube(g_walls[i], [1.0, 0, 0, 1.0], 1);
-    }
-}
-
 function renderScene() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // ground
-    // g_scratchM.setIdentity().translate(-3, -1.1, -4).scale(40, 0.5, 40);
-    // g_scratchM
-    //     .scale(1000, 0.1, 1000)
-    //     .translate(-0.5, 0, -0.5);
-    // drawCube(g_scratchM, white, 0);
 
-    g_scratchM.setIdentity().scale(50, 50, 50).translate(-0.5, -0.5, -0.5);
+    g_scratchM.setIdentity().translate(-500, -0.1, -500).scale(1000, 0.1, 1000);
+    drawCube(g_scratchM, white, 0);
+    // g_scratchM.setIdentity().translate(-25, -1, -25).scale(80, 0.1, 80);
+    // drawCube(g_scratchM, [0.3, 0.6, 0.3, 1], -1);
+
+    // sky
+    g_scratchM
+        .setIdentity()
+        .translate(16, 0, 16)
+        .scale(500, 500, 500)
+        .translate(-0.5, -0.5, -0.5);
     drawCube(g_scratchM, blue, -1);
     drawMap();
 }
