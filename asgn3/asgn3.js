@@ -178,7 +178,7 @@ function initTextures() {
     image0.onload = function () {
         sendImageToTEXTURE0(image0);
     };
-    image0.src = "./img/blocks/dirt.png";
+    image0.src = "./img/dirt.png";
 
     var image1 = new Image();
     if (!image1) {
@@ -188,7 +188,7 @@ function initTextures() {
     image1.onload = function () {
         sendImageToTEXTURE1(image1);
     };
-    image1.src = "./img/blocks/cobblestone.png";
+    image1.src = "./img/cobblestone.png";
 
     var image2 = new Image();
     if (!image2) {
@@ -198,7 +198,7 @@ function initTextures() {
     image2.onload = function () {
         sendImageToTEXTURE2(image2);
     };
-    image2.src = "./img/blocks/cobblestone_bricks.png";
+    image2.src = "./img/cobblestone_bricks.png";
 
     var image3 = new Image();
     if (!image3) {
@@ -208,7 +208,7 @@ function initTextures() {
     image3.onload = function () {
         sendImageToTEXTURE3(image3);
     };
-    image3.src = "./img/blocks/cobblestone_bricks_mossy.png";
+    image3.src = "./img/cobblestone_bricks_mossy.png";
 
     return true;
 }
