@@ -8,13 +8,12 @@ var VSHADER_SOURCE = `
   varying vec2 v_UV;
 
   uniform mat4 u_ModelMatrix;
-  uniform mat4 u_GlobalRotateMatrix;
 
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
 
   void main() {
-    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
   }
   `;
@@ -40,7 +39,7 @@ var FSHADER_SOURCE = `
   }
   `;
 
-const DEBUG = 1;
+const DEBUG = 0;
 
 function debugLog(...args) {
     if (DEBUG >= 1) console.log(...args);
@@ -51,40 +50,11 @@ function verboseLog(...args) {
 let canvas;
 let gl;
 
-// globals related to ui elements
-const colorScale = 100;
-let g_globalAngle = 0;
-let g_globalRot = 0;
-let g_bodyTilt = 0;
-let g_bodySide = 0;
-let g_globalAnimation = false;
-let g_pokeAnimation = false;
-let g_pokeStartTime = 0;
-
 let g_camera = null;
-
-// let g_globalX = 0;
-// let g_globalY = 0;
-let g_mousePosX = 0;
-let g_mousePosY = 0;
-let g_baseRotX = 0;
-let g_baseRotY = 0;
 
 // matrices
 const g_scratchM = new Matrix4();
-const g_birdRootM = new Matrix4();
-const g_jointM = new Matrix4();
-const g_bodyM = new Matrix4();
-const g_scratchRotM = new Matrix4();
-// join rotations
 
-let g_leftShoulderRot = 0;
-let g_leftElbowRot = 0;
-let g_leftWristRot = 0;
-
-let g_rightShoulderRot = 0;
-let g_rightElbowRot = 0;
-let g_rightWristRot = 0;
 let g_keys = {};
 
 let a_Position;
@@ -97,16 +67,9 @@ let u_whichTexture;
 let u_ModelMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
-let u_GlobalRotateMatrix;
-
-const g_rightWingRootM = new Matrix4();
 
 function setupWebGL() {
-    // Retrieve <canvas> element
     canvas = document.getElementById("webgl");
-
-    // Get the rendering context for WebGL
-    // gl = getWebGLContext(canvas);
     gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
 
     // TODO: remove
@@ -114,8 +77,8 @@ function setupWebGL() {
     if (!gl) {
         console.log("Failed to get the rendering context for WebGL");
     }
-
     gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
 
     return true;
 }
@@ -160,17 +123,6 @@ function connectVariablesToGLSL() {
         console.log("Failed to get the storage location of u_ProjectionMatrix");
     }
 
-    u_GlobalRotateMatrix = gl.getUniformLocation(
-        gl.program,
-        "u_GlobalRotateMatrix",
-    );
-
-    if (!u_GlobalRotateMatrix) {
-        console.log(
-            "Failed to get the storage location of u_GlobalRotateMatrix",
-        );
-    }
-
     // Get the storage location of u_Sampler0
     u_Sampler0 = gl.getUniformLocation(gl.program, "u_Sampler0");
     if (!u_Sampler0) {
@@ -192,7 +144,6 @@ function connectVariablesToGLSL() {
     // NOTE: should work with a single created identiy matrix
     var identityM = new Matrix4();
     gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
-    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, identityM.elements);
 
     return true;
 }
@@ -207,7 +158,8 @@ function initTextures() {
     image.onload = function () {
         sendImageToTEXTURE0(image);
     };
-    image.src = "./img/128x128/Gray/Prototype_Grid_Gray_03-128x128.png";
+    // image.src = "./img/128x128/Gray/Prototype_Grid_Gray_03-128x128.png";
+    image.src = "./img/uvCoords.png";
 
     // TODO: add more textures later
 
@@ -290,8 +242,6 @@ function main() {
         debugLog("key up");
     });
 
-    canvas.onmousemove = function (ev) {};
-
     canvas.addEventListener("click", async () => {
         if (!document.pointerLockElement) {
             try {
@@ -332,7 +282,7 @@ function main() {
     initCubeBuffers();
     initWalls();
     // TODO: cone
-    //initConeBuffer();
+    initConeBuffer();
 
     requestAnimationFrame(tick);
 }
@@ -360,7 +310,6 @@ function tick() {
     const baseSpeed = (0.1 / 20) * frameMS;
     if (g_keys["w"]) {
         g_camera.moveForward(baseSpeed);
-        debugLog("forward");
     }
     if (g_keys["a"]) {
         g_camera.moveLeft(baseSpeed);
@@ -381,9 +330,6 @@ function tick() {
     g_seconds = performance.now() / 1000.0 - g_startTime;
     verboseLog(g_seconds);
 
-    // update animation angles
-    updateAnimationAngles();
-    // render everything
     renderScene();
 
     sendTextToHTML(
@@ -396,31 +342,6 @@ function tick() {
     requestAnimationFrame(tick);
 }
 
-function updateAnimationAngles() {
-    if (g_pokeAnimation) {
-        const t = (g_seconds - g_pokeStartTime) / 0.6;
-        debugLog(t);
-        if (t >= 4) {
-            debugLog("poke should not be active");
-            g_pokeAnimation = false;
-            g_bodyTilt = 0;
-        } else {
-            if (g_bodyTilt < 90) {
-                g_bodyTilt = (1 - Math.pow(1 - t, 3)) * 90;
-            }
-        }
-    } else if (g_globalAnimation) {
-        const waddle = Math.sin(g_seconds * 4);
-        g_bodySide = 15 * waddle;
-        const flap = 20 + 10 * Math.abs(waddle);
-        g_leftShoulderRot = -flap;
-        g_rightShoulderRot = flap;
-    } else {
-        g_globalRot = 0;
-        g_bodySide = 0;
-    }
-}
-
 const purple = [0.4, 0.3, 0.85, 1];
 const white = [0.95, 0.95, 0.95, 1];
 const darkEye = [0.1, 0.1, 0.15, 1];
@@ -431,13 +352,14 @@ let g_map = [];
 for (let i = 0; i < 32; ++i) {
     g_map[i] = [];
     for (let j = 0; j < 32; ++j) {
-        g_map[i][j] = 1;
+        // g_map[i][j] = Math.floor(Math.random() * 20);
+        g_map[i][j] = 0;
     }
 }
 
-g_map[0][1] = 1;
-g_map[0][0] = 2;
-g_map[1][0] = 3;
+// g_map[0][1] = 1;
+g_map[0][0] = 1;
+g_map[1][0] = 2;
 
 let g_walls = [];
 function initWalls() {
@@ -459,11 +381,6 @@ function drawMap() {
 }
 
 function renderScene() {
-    // gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
-
-    g_scratchRotM.setIdentity();
-    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_scratchRotM.elements);
-
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // ground

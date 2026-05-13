@@ -3,9 +3,12 @@
 class Camera {
     constructor() {
         this.fov = 90;
-        this.eye = new Vector3([0, 2.1, 0]);
+        // TODO: remove
+        this.eye = new Vector3([0, 0, 0]);
         this.at = new Vector3([0, 0, -1]);
         this.up = new Vector3([0, 1, 0]);
+        this.collisionOn = false;
+        this.noclipOn = true;
 
         this.viewMatrix = new Matrix4();
         this.viewMatrix.setLookAt(
@@ -80,11 +83,17 @@ class Camera {
                         playerMax.elements[0] > i &&
                         playerMin.elements[0] < i + 1;
                     const overlapsY =
-                        playerMax.elements[1] > 0 && playerMin.elements[1] < h;
+                        playerMax.elements[1] > 0 &&
+                        playerMin.elements[1] < height;
                     const overlapsZ =
                         playerMax.elements[2] > j &&
                         playerMin.elements[2] < j + 1;
-                    if (overlapsX && overlapsY && overlapsZ) {
+                    if (
+                        overlapsX &&
+                        overlapsY &&
+                        overlapsZ &&
+                        this.collisionOn
+                    ) {
                         return true;
                     }
                 }
@@ -96,14 +105,34 @@ class Camera {
     moveForward(speed = 0.1) {
         // this._f.set(this.at).sub(this.eye).normalize().mul(speed);
         // zero out y component
-        this._f.set(this.at).sub(this.eye);
-        this._f.elements[1] = 0;
-        this._f.normalize().mul(speed);
+        if (!this.noclipOn) {
+            // not possible to extract becaues of this?
+            this._f.set(this.at).sub(this.eye);
+            this._f.elements[1] = 0;
+            this._f.normalize().mul(speed);
+            // check for collision in x
+            this.eye.elements[0] += this._f.elements[0];
+            this.at.elements[0] += this._f.elements[0];
+            if (this.collidesWithWorld()) {
+                debugLog("collision x");
+                this.eye.elements[0] -= this._f.elements[0];
+                this.at.elements[0] -= this._f.elements[0];
+            }
 
-        // this.eye.elements[0] =
+            // check for collision in z
+            this.eye.elements[2] += this._f.elements[2];
+            this.at.elements[2] += this._f.elements[2];
+            if (this.collidesWithWorld()) {
+                debugLog("collision z");
+                this.eye.elements[2] -= this._f.elements[2];
+                this.at.elements[2] -= this._f.elements[2];
+            }
+        } else {
+            this._f.set(this.at).sub(this.eye).normalize().mul(speed);
+            this.eye.add(this._f);
+            this.at.add(this._f);
+        }
 
-        this.eye.add(this._f);
-        this.at.add(this._f);
         this.updateViewMatrix();
     }
 
@@ -111,12 +140,30 @@ class Camera {
         // this._f.set(this.eye).sub(this.at).normalize().mul(speed);
 
         // zero out y component
-        this._f.set(this.eye).sub(this.at);
-        this._f.elements[1] = 0;
-        this._f.normalize().mul(speed);
+        if (!this.noclipOn) {
+            this._f.set(this.eye).sub(this.at);
+            this._f.elements[1] = 0;
+            this._f.normalize().mul(speed);
+            // check for collision in x
+            this.eye.elements[0] += this._f.elements[0];
+            this.at.elements[0] += this._f.elements[0];
+            if (this.collidesWithWorld()) {
+                this.eye.elements[0] -= this._f.elements[0];
+                this.at.elements[0] -= this._f.elements[0];
+            }
+            // check for collision in z
+            this.eye.elements[2] += this._f.elements[2];
+            this.at.elements[2] += this._f.elements[2];
+            if (this.collidesWithWorld()) {
+                this.eye.elements[2] -= this._f.elements[2];
+                this.at.elements[2] -= this._f.elements[2];
+            }
+        } else {
+            this._f.set(this.eye).sub(this.at).normalize().mul(speed);
+            this.eye.add(this._f);
+            this.at.add(this._f);
+        }
 
-        this.eye.add(this._f);
-        this.at.add(this._f);
         this.updateViewMatrix();
     }
 
@@ -125,8 +172,24 @@ class Camera {
         // TODO: maybe avoid memory
         this._s = Vector3.cross(this.up, this._f);
         this._s.normalize().mul(speed);
-        this.eye.add(this._s);
-        this.at.add(this._s);
+
+        // check for collision in x
+        this.eye.elements[0] += this._s.elements[0];
+        this.at.elements[0] += this._s.elements[0];
+        if (this.collidesWithWorld()) {
+            this.eye.elements[0] -= this._s.elements[0];
+            this.at.elements[0] -= this._s.elements[0];
+        }
+        // check for collision in z
+        this.eye.elements[2] += this._s.elements[2];
+        this.at.elements[2] += this._s.elements[2];
+        if (this.collidesWithWorld()) {
+            this.eye.elements[2] -= this._s.elements[2];
+            this.at.elements[2] -= this._s.elements[2];
+        }
+
+        // this.eye.add(this._s);
+        // this.at.add(this._s);
         this.updateViewMatrix();
     }
 
@@ -135,8 +198,24 @@ class Camera {
         // TODO: maybe avoid memory
         this._s = Vector3.cross(this._f, this.up);
         this._s.normalize().mul(speed);
-        this.eye.add(this._s);
-        this.at.add(this._s);
+
+        // check for collision in x
+        this.eye.elements[0] += this._s.elements[0];
+        this.at.elements[0] += this._s.elements[0];
+        if (this.collidesWithWorld()) {
+            this.eye.elements[0] -= this._s.elements[0];
+            this.at.elements[0] -= this._s.elements[0];
+        }
+        // check for collision in z
+        this.eye.elements[2] += this._s.elements[2];
+        this.at.elements[2] += this._s.elements[2];
+        if (this.collidesWithWorld()) {
+            this.eye.elements[2] -= this._s.elements[2];
+            this.at.elements[2] -= this._s.elements[2];
+        }
+
+        // this.eye.add(this._s);
+        // this.at.add(this._s);
         this.updateViewMatrix();
     }
 

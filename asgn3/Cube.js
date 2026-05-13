@@ -23,18 +23,18 @@ function initCubeBuffers() {
     gl.bufferData(
         gl.ARRAY_BUFFER,
         new Float32Array([
-            // front
-            0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0,
-            // back
-            0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1,
-            // left
-            0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1,
-            // right
-            1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1,
-            // top
+            // FRONT
+            0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1,
+            // LEFT
+            0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1,
+            // RIGHT
+            1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0,
+            // TOP
             0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0,
-            // bottom
-            0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1,
+            // BACK
+            1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0,
+            // BOTTOM
+            0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1,
         ]),
         gl.STATIC_DRAW,
     );
@@ -53,18 +53,18 @@ function initCubeBuffers() {
     gl.bufferData(
         gl.ARRAY_BUFFER,
         new Float32Array([
-            // front
-            0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1,
-            // back
-            0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1,
-            // left
-            0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1,
-            // right
-            0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1,
-            // top
-            0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0,
-            // bottom
-            0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1,
+            // FRONT
+            0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1,
+            // LEFT
+            0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1,
+            // RIGHT
+            0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1,
+            // TOP
+            1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0,
+            // BACK
+            0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0,
+            // BOTTOM
+            0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1,
         ]),
         gl.STATIC_DRAW,
     );
@@ -86,22 +86,4 @@ function drawCube(matrix, color, textureNum = -1) {
 
     gl.uniform4f(u_FragColor, color[0], color[1], color[2], color[3]);
     gl.drawArrays(gl.TRIANGLES, 0, 32);
-
-    // setColor(1, color);
-    // gl.drawArrays(gl.TRIANGLES, front, 6);
-
-    // setColor(0.5, color);
-    // gl.drawArrays(gl.TRIANGLES, back, 6);
-
-    // setColor(0.7, color);
-    // gl.drawArrays(gl.TRIANGLES, left, 6);
-
-    // setColor(0.6, color);
-    // gl.drawArrays(gl.TRIANGLES, right, 6);
-
-    // setColor(0.9, color);
-    // gl.drawArrays(gl.TRIANGLES, cubetop, 6);
-
-    // setColor(0.4, color);
-    // gl.drawArrays(gl.TRIANGLES, bottom, 6);
 }
