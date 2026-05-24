@@ -7,8 +7,8 @@ var VSHADER_SOURCE = `
   attribute vec3 a_Normal;
 
   varying vec2 v_UV;
-  varying vec3 v_Normal;
-  varying float v_Lighting;
+  varying vec3 v_NormalDir;
+  varying vec3 v_LightDir;
 
   uniform mat4 u_NormalMatrix;
   uniform mat4 u_ModelMatrix;
@@ -19,11 +19,11 @@ var VSHADER_SOURCE = `
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
-    v_Normal = normalize(vec3(u_NormalMatrix * vec4(a_Normal, 0.0)));
+    v_NormalDir = normalize(vec3(u_NormalMatrix * vec4(a_Normal, 0.0)));
 
     vec4 worldPos = u_ModelMatrix * a_Position;
-    vec3 lightDir = normalize(u_LightPos - vec3(worldPos));
-    v_Lighting = dot(lightDir, v_Normal);
+    v_LightDir = normalize(u_LightPos - vec3(worldPos));
+    // v_Lighting = dot(LightDir, v_Normal);
   }
   `;
 
@@ -32,8 +32,8 @@ var FSHADER_SOURCE = `
   precision mediump float;
 
   varying vec2 v_UV;
-  varying vec3 v_Normal;
-  varying float v_Lighting;
+  varying vec3 v_NormalDir;
+  varying vec3 v_LightDir;
 
   uniform vec4 u_FragColor;
 
@@ -47,12 +47,16 @@ var FSHADER_SOURCE = `
   uniform vec3 u_LightPos;
 
   void main() {
+    vec3 N = normalize(v_NormalDir);
+    vec3 L = normalize(v_LightDir);
+    float nDotL = max(dot(L, N), 0.0);
+
     if (u_normalOn) {
-      gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
+      gl_FragColor = vec4((N+1.0)/2.0, 1.0);
       return;
     }
     if (u_whichTexture == -2) {
-      gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
+      gl_FragColor = vec4((N+1.0)/2.0, 1.0);
     } else if (u_whichTexture == -1) {
       gl_FragColor = u_FragColor;
     } else if (u_whichTexture == 0) {
@@ -66,7 +70,7 @@ var FSHADER_SOURCE = `
     } else {
       gl_FragColor = u_FragColor;
     }
-    gl_FragColor.rgb *= v_Lighting;
+    gl_FragColor.rgb *= nDotL;
   }
   `;
 
@@ -522,7 +526,7 @@ function renderScene() {
         .translate(-0.5, -0.5, -0.5);
     drawCube(g_scratchM, blue, -1);
 
-    drawMap();
+    // drawMap();
 }
 
 function sendTextToHTML(text, htmlID) {
