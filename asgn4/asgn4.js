@@ -1,11 +1,13 @@
 "use strict";
-
+const DEBUG = 2;
 // Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
-
   attribute vec2 a_UV;
+  attribute vec3 a_Normal;
+
   varying vec2 v_UV;
+  varying vec3 v_Normal;
 
   uniform mat4 u_ModelMatrix;
 
@@ -15,21 +17,35 @@ var VSHADER_SOURCE = `
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
+    v_Normal = a_Normal;
   }
   `;
 
 // Fragment shader program
 var FSHADER_SOURCE = `
   precision mediump float;
+
   varying vec2 v_UV;
+  varying vec3 v_Normal;
+
   uniform vec4 u_FragColor;
+
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
   uniform sampler2D u_Sampler2;
   uniform sampler2D u_Sampler3;
+
   uniform int u_whichTexture;
+  uniform bool u_normalOn;
+
   void main() {
-    if (u_whichTexture == -1) {
+    if (u_normalOn) {
+      gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
+      return;
+    }
+    if (u_whichTexture == -2) {
+      gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
+    } else if (u_whichTexture == -1) {
       gl_FragColor = u_FragColor;
     } else if (u_whichTexture == 0) {
       gl_FragColor = texture2D(u_Sampler0, v_UV);
@@ -44,8 +60,6 @@ var FSHADER_SOURCE = `
     }
   }
   `;
-
-const DEBUG = 0;
 
 function debugLog(...args) {
     if (DEBUG >= 1) console.log(...args);
@@ -64,6 +78,7 @@ const g_scratchM = new Matrix4();
 let g_keys = {};
 
 let a_Position;
+let a_Normal;
 let u_Sampler0;
 let u_Sampler1;
 let u_Sampler2;
@@ -75,6 +90,7 @@ let u_whichTexture;
 let u_ModelMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
+let u_normalOn;
 
 function setupWebGL() {
     canvas = document.getElementById("webgl");
@@ -86,9 +102,20 @@ function setupWebGL() {
         console.log("Failed to get the rendering context for WebGL");
     }
     gl.enable(gl.DEPTH_TEST);
-    // gl.enable(gl.CULL_FACE);
+    //gl.enable(gl.CULL_FACE);
 
     return true;
+}
+
+function addActionsForHtmlUI() {
+    document.getElementById("normalOn").onclick = function () {
+        debugLog("normal is on");
+        gl.uniform1i(u_normalOn, 1);
+    };
+    document.getElementById("normalOff").onclick = function () {
+        debugLog("normal is off");
+        gl.uniform1i(u_normalOn, 0);
+    };
 }
 
 function connectVariablesToGLSL() {
@@ -102,6 +129,13 @@ function connectVariablesToGLSL() {
     if (a_Position < 0) {
         console.log("Failed to get the storage location of a_Position");
     }
+
+    // Get the storage location of a_Normal
+    a_Normal = gl.getAttribLocation(gl.program, "a_Normal");
+    if (a_Normal < 0) {
+        console.log("Failed to get the storage location of a_Normal");
+    }
+
     a_UV = gl.getAttribLocation(gl.program, "a_UV");
     if (a_UV < 0) {
         console.log("Failed to get the storage location of a_UV");
@@ -158,6 +192,11 @@ function connectVariablesToGLSL() {
     u_whichTexture = gl.getUniformLocation(gl.program, "u_whichTexture");
     if (!u_whichTexture) {
         console.log("Failed to get the storage location of u_whichTexture");
+    }
+
+    u_normalOn = gl.getUniformLocation(gl.program, "u_normalOn");
+    if (!u_normalOn) {
+        console.log("Failed to get the storage location of u_normalOn");
     }
 
     // setup initial matrices
@@ -296,6 +335,7 @@ function main() {
     if (!connectVariablesToGLSL()) return;
     // TODO: maybe move initTextures call
     if (!initTextures(gl, 0)) return;
+    addActionsForHtmlUI();
 
     g_camera = new Camera();
     gl.uniformMatrix4fv(
@@ -351,6 +391,7 @@ function main() {
     gl.clearColor(0, 0, 0, 1.0);
 
     initCubeBuffers();
+    initSphereBuffer();
     generateMaze();
     initWalls();
     // TODO: cone
@@ -434,10 +475,12 @@ function renderScene() {
     g_scratchM
         .setIdentity()
         .translate(16, 0, 16)
-        .scale(500, 500, 500)
+        .scale(-500, -500, -500)
         .translate(-0.5, -0.5, -0.5);
     drawCube(g_scratchM, blue, -1);
-    drawMap();
+    g_scratchM.setIdentity().translate(0, 0, 0).scale(50, 50, 50);
+    drawSphere(g_scratchM, [1, 0, 0, 1], -1);
+    // drawMap();
 }
 
 function sendTextToHTML(text, htmlID) {
