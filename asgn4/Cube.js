@@ -170,6 +170,8 @@ function drawCube(matrix, color, textureNum = -1) {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g_indexBuffer);
 
     gl.uniformMatrix4fv(u_ModelMatrix, false, matrix.elements);
+    g_normalScratchM.setInverseOf(matrix).transpose();
+    gl.uniformMatrix4fv(u_NormalMatrix, false, g_normalScratchM.elements);
     gl.uniform4f(u_FragColor, color[0], color[1], color[2], color[3]);
 
     // draw elements instead of drawArrays

@@ -1,5 +1,5 @@
 "use strict";
-const DEBUG = 2;
+const DEBUG = 1;
 // Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
@@ -8,16 +8,22 @@ var VSHADER_SOURCE = `
 
   varying vec2 v_UV;
   varying vec3 v_Normal;
+  varying float v_Lighting;
 
+  uniform mat4 u_NormalMatrix;
   uniform mat4 u_ModelMatrix;
-
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
+  uniform vec3 u_LightPos;
 
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
-    v_Normal = a_Normal;
+    v_Normal = normalize(vec3(u_NormalMatrix * vec4(a_Normal, 0.0)));
+
+    vec4 worldPos = u_ModelMatrix * a_Position;
+    vec3 lightDir = normalize(u_LightPos - vec3(worldPos));
+    v_Lighting = dot(lightDir, v_Normal);
   }
   `;
 
@@ -27,6 +33,7 @@ var FSHADER_SOURCE = `
 
   varying vec2 v_UV;
   varying vec3 v_Normal;
+  varying float v_Lighting;
 
   uniform vec4 u_FragColor;
 
@@ -37,6 +44,7 @@ var FSHADER_SOURCE = `
 
   uniform int u_whichTexture;
   uniform bool u_normalOn;
+  uniform vec3 u_LightPos;
 
   void main() {
     if (u_normalOn) {
@@ -58,6 +66,7 @@ var FSHADER_SOURCE = `
     } else {
       gl_FragColor = u_FragColor;
     }
+    gl_FragColor.rgb *= v_Lighting;
   }
   `;
 
@@ -74,8 +83,10 @@ let g_camera = null;
 
 // matrices
 const g_scratchM = new Matrix4();
+const g_normalScratchM = new Matrix4();
 
 let g_keys = {};
+let g_LightPos = [5, 3, 2];
 
 let a_Position;
 let a_Normal;
@@ -90,7 +101,9 @@ let u_whichTexture;
 let u_ModelMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
+let u_NormalMatrix;
 let u_normalOn;
+let u_LightPos;
 
 function setupWebGL() {
     canvas = document.getElementById("webgl");
@@ -115,6 +128,15 @@ function addActionsForHtmlUI() {
     document.getElementById("normalOff").onclick = function () {
         debugLog("normal is off");
         gl.uniform1i(u_normalOn, 0);
+    };
+    document.getElementById("lightSliderX").oninput = function () {
+        g_LightPos[0] = parseFloat(this.value);
+    };
+    document.getElementById("lightSliderY").oninput = function () {
+        g_LightPos[1] = parseFloat(this.value);
+    };
+    document.getElementById("lightSliderZ").oninput = function () {
+        g_LightPos[2] = parseFloat(this.value);
     };
 }
 
@@ -197,6 +219,16 @@ function connectVariablesToGLSL() {
     u_normalOn = gl.getUniformLocation(gl.program, "u_normalOn");
     if (!u_normalOn) {
         console.log("Failed to get the storage location of u_normalOn");
+    }
+
+    u_LightPos = gl.getUniformLocation(gl.program, "u_LightPos");
+    if (!u_LightPos) {
+        console.log("Failed to get the storage location of u_LightPos");
+    }
+
+    u_NormalMatrix = gl.getUniformLocation(gl.program, "u_NormalMatrix");
+    if (!u_NormalMatrix) {
+        console.log("Failed to get the storage location of u_NormalMatrix");
     }
 
     // setup initial matrices
@@ -395,7 +427,7 @@ function main() {
     generateMaze();
     initWalls();
     // TODO: cone
-    initConeBuffer();
+    // initConeBuffer();
 
     requestAnimationFrame(tick);
 }
@@ -464,6 +496,8 @@ const blue = [0.035, 0.102, 0.184, 1];
 function renderScene() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    gl.uniform3f(u_LightPos, g_LightPos[0], g_LightPos[1], g_LightPos[2]);
+
     // ground
 
     g_scratchM.setIdentity().translate(-500, -0.1, -500).scale(1000, 0.1, 1000);
@@ -478,9 +512,17 @@ function renderScene() {
         .scale(-500, -500, -500)
         .translate(-0.5, -0.5, -0.5);
     drawCube(g_scratchM, blue, -1);
-    g_scratchM.setIdentity().translate(0, 0, 0).scale(50, 50, 50);
+    g_scratchM.setIdentity().translate(8, 2, 8).scale(2, 2, 2);
     drawSphere(g_scratchM, [1, 0, 0, 1], -1);
-    // drawMap();
+
+    g_scratchM
+        .setIdentity()
+        .translate(g_LightPos[0], g_LightPos[1], g_LightPos[2])
+        .scale(0.3, 0.3, 0.3)
+        .translate(-0.5, -0.5, -0.5);
+    drawCube(g_scratchM, blue, -1);
+
+    drawMap();
 }
 
 function sendTextToHTML(text, htmlID) {

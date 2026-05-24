@@ -1,7 +1,6 @@
 let g_sphere = {
     buffer: null,
     uvBuffer: null,
-    normalBuffer: null,
     indexBuffer: null,
     indexCount: 0,
     // vertexCount: 0,
@@ -91,48 +90,19 @@ function initSphereBuffer() {
     gl.enableVertexAttribArray(a_Position);
     gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
 
-    // // UV buffer
-    // if (g_sphere.uvBuffer == null) {
-    //     g_sphere.uvBuffer = gl.createBuffer();
-    //     if (!g_sphere.uvBuffer) {
-    //         console.log("Failed to create the sphere uv buffer object");
-    //         return -1;
-    //     }
-    // }
-
-    // gl.bindBuffer(gl.ARRAY_BUFFER, g_sphereUvBuffer);
-    // gl.bufferData(
-    //     gl.ARRAY_BUFFER,
-    //     new Float32Array([
-    //         // FRONT
-    //         0, 1, 0, 0, 1, 0, 1, 1,
-    //         // LEFT
-    //         0, 1, 0, 0, 1, 0, 1, 1,
-    //         // RIGHT
-    //         0, 1, 0, 0, 1, 0, 1, 1,
-    //         // TOP
-    //         1, 0, 1, 1, 0, 1, 0, 0,
-    //         // BACK
-    //         0, 1, 0, 0, 1, 0, 1, 1,
-    //         // BOTTOM
-    //         0, 1, 0, 0, 1, 0, 1, 1,
-    //     ]),
-    //     gl.STATIC_DRAW,
-    // );
-    // gl.enableVertexAttribArray(a_UV);
-    // gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
-
-    if (g_sphere.normalBuffer == null) {
-        g_sphere.normalBuffer = gl.createBuffer();
-        if (!g_sphere.normalBuffer) {
-            console.log("Failed to create the sphere normal buffer object");
+    // UV buffer
+    if (g_sphere.uvBuffer == null) {
+        g_sphere.uvBuffer = gl.createBuffer();
+        if (!g_sphere.uvBuffer) {
+            console.log("Failed to create the sphere uv buffer object");
             return -1;
         }
     }
-    gl.bindBuffer(gl.ARRAY_BUFFER, g_sphere.normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(a_Normal);
-    gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, g_sphere.uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(a_UV);
+    gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
 
     if (g_sphere.indexBuffer == null) {
         g_sphere.indexBuffer = gl.createBuffer();
@@ -164,15 +134,18 @@ function drawSphere(matrix, color, textureNum = -1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, g_sphere.buffer);
     gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
 
-    // gl.bindBuffer(gl.ARRAY_BUFFER, g_sphereUvBuffer);
-    // gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, g_sphere.uvBuffer);
+    gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, g_sphere.normalBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, g_sphere.buffer);
     gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
 
+    // element array buffer for index drawing method
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g_sphere.indexBuffer);
 
     gl.uniformMatrix4fv(u_ModelMatrix, false, matrix.elements);
+    g_normalScratchM.setInverseOf(matrix).transpose();
+    gl.uniformMatrix4fv(u_NormalMatrix, false, g_normalScratchM.elements);
     gl.uniform4f(u_FragColor, color[0], color[1], color[2], color[3]);
 
     verboseLog("count passed to drawElements= ", g_sphere.indexCount);
