@@ -117,6 +117,7 @@ const g_scratchM = new Matrix4();
 const g_normalScratchM = new Matrix4();
 
 let g_keys = {};
+let g_bunny = null;
 let g_LightPos = [5, 3, 2];
 let g_LightColor = [1, 1, 1];
 let g_lightingOn = true;
@@ -402,9 +403,10 @@ function sendImageToTEXTURE0(image) {
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     // Set the texture parameters
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    // Set the texture image
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Set the texture unit 0 to the sampler
     gl.uniform1i(u_Sampler0, 0);
@@ -424,9 +426,10 @@ function sendImageToTEXTURE1(image) {
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     // Set the texture parameters
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    // Set the texture image
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Set the texture unit 0 to the sampler
     gl.uniform1i(u_Sampler1, 1);
@@ -443,8 +446,10 @@ function sendImageToTEXTURE2(image) {
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     gl.uniform1i(u_Sampler2, 2);
 }
@@ -460,8 +465,10 @@ function sendImageToTEXTURE3(image) {
     gl.activeTexture(gl.TEXTURE3);
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     gl.uniform1i(u_Sampler3, 3);
 }
@@ -530,6 +537,8 @@ function main() {
     initSphereBuffer();
     generateMaze();
     initWalls();
+    g_bunny = new Model("./models/bunny.obj");
+    g_bunny.matrix.setTranslate(4, 0, 4).scale(8, 8, 8);
     // TODO: cone
     // initConeBuffer();
 
@@ -639,6 +648,8 @@ function renderScene() {
     drawCube(g_scratchM, blue, -1);
 
     drawMap();
+
+    if (g_bunny) g_bunny.render();
 }
 
 function sendTextToHTML(text, htmlID) {
