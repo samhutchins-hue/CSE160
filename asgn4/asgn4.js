@@ -48,6 +48,7 @@ var FSHADER_SOURCE = `
   uniform bool u_normalOn;
   uniform bool u_lightingOn;
   uniform vec3 u_LightPos;
+  uniform vec3 u_LightColor;
   uniform vec3 u_CameraPos;
 
   void main() {
@@ -55,10 +56,7 @@ var FSHADER_SOURCE = `
     vec3 N = normalize(v_NormalDir);
     vec3 L = normalize(v_LightDir);
     float nDotL = max(dot(L, N), 0.0);
-
-    // reflection
     vec3 R = reflect(-L, N);
-
 
     if (u_normalOn) {
       gl_FragColor = vec4((N+1.0)/2.0, 1.0);
@@ -79,19 +77,13 @@ var FSHADER_SOURCE = `
     } else {
       gl_FragColor = u_FragColor;
     }
-      float spec = pow(max(dot(R, V), 0.0), 128.0);
-      vec3 diffuse  = vec3(gl_FragColor) * nDotL;
-      vec3 ambient  = vec3(gl_FragColor) * 0.3;
-      vec3 specular = vec3(1.0) * spec;
 
     if (u_lightingOn) {
-        if (u_whichTexture == -2 || u_whichTexture == 0 ||
-            u_whichTexture == 1  || u_whichTexture == 2 || u_whichTexture == 3) {
-            gl_FragColor = vec4((N+1.0)/2.0, 1.0);
-            gl_FragColor = vec4(diffuse + ambient, 1.0);
-        } else {
-            gl_FragColor = vec4(diffuse + ambient + specular, 1.0);
-        }
+      float spec = pow(max(dot(R, V), 0.0), 128.0);
+      vec3 diffuse = vec3(gl_FragColor) * nDotL * u_LightColor;
+      vec3 ambient = vec3(gl_FragColor) * 0.3;
+      vec3 specular = u_LightColor * spec;
+      gl_FragColor = vec4(diffuse + ambient + specular, 1.0);
     }
   }
   `;
@@ -113,6 +105,8 @@ const g_normalScratchM = new Matrix4();
 
 let g_keys = {};
 let g_LightPos = [5, 3, 2];
+let g_LightColor = [1, 1, 1];
+let g_lightingOn = true;
 
 let a_Position;
 let a_Normal;
@@ -131,6 +125,7 @@ let u_NormalMatrix;
 let u_normalOn;
 let u_lightingOn;
 let u_LightPos;
+let u_LightColor;
 let u_CameraPos;
 
 function setupWebGL() {
@@ -159,11 +154,11 @@ function addActionsForHtmlUI() {
     };
     document.getElementById("lightingOn").onclick = function () {
         debugLog("lighting is on");
-        gl.uniform1i(u_lightingOn, 1);
+        g_lightingOn = true;
     };
     document.getElementById("lightingOff").onclick = function () {
         debugLog("lighting is off");
-        gl.uniform1i(u_lightingOn, 0);
+        g_lightingOn = false;
     };
     document.getElementById("lightSliderX").oninput = function () {
         g_LightPos[0] = parseFloat(this.value);
@@ -173,6 +168,15 @@ function addActionsForHtmlUI() {
     };
     document.getElementById("lightSliderZ").oninput = function () {
         g_LightPos[2] = parseFloat(this.value);
+    };
+    document.getElementById("lightColorR").oninput = function () {
+        g_LightColor[0] = parseFloat(this.value) / 100;
+    };
+    document.getElementById("lightColorG").oninput = function () {
+        g_LightColor[1] = parseFloat(this.value) / 100;
+    };
+    document.getElementById("lightColorB").oninput = function () {
+        g_LightColor[2] = parseFloat(this.value) / 100;
     };
 }
 
@@ -267,6 +271,11 @@ function connectVariablesToGLSL() {
         console.log("Failed to get the storage location of u_LightPos");
     }
 
+    u_LightColor = gl.getUniformLocation(gl.program, "u_LightColor");
+    if (!u_LightColor) {
+        console.log("Failed to get the storage location of u_LightColor");
+    }
+
     u_CameraPos = gl.getUniformLocation(gl.program, "u_CameraPos");
     if (!u_CameraPos) {
         console.log("Failed to get the storage location of u_CameraPos");
@@ -281,8 +290,6 @@ function connectVariablesToGLSL() {
     // NOTE: should work with a single created identiy matrix
     var identityM = new Matrix4();
     gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
-
-    gl.uniform1i(u_lightingOn, 1);
 
     return true;
 }
@@ -545,7 +552,14 @@ function renderScene() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.uniform3f(u_LightPos, g_LightPos[0], g_LightPos[1], g_LightPos[2]);
+    gl.uniform3f(
+        u_LightColor,
+        g_LightColor[0],
+        g_LightColor[1],
+        g_LightColor[2],
+    );
     gl.uniform3fv(u_CameraPos, g_camera.eye.elements);
+    gl.uniform1i(u_lightingOn, g_lightingOn ? 1 : 0);
 
     // ground
 
