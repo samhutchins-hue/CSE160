@@ -121,6 +121,7 @@ let g_bunny = null;
 let g_LightPos = [5, 3, 2];
 let g_LightColor = [1, 1, 1];
 let g_lightingOn = true;
+let g_lightAnimateOn = true;
 let g_spotlightOn = false;
 let g_SpotDir = [0, -1, 0];
 let g_SpotCosCutoff = Math.cos((25 * Math.PI) / 180);
@@ -189,6 +190,14 @@ function addActionsForHtmlUI() {
     document.getElementById("spotlightOff").onclick = function () {
         debugLog("spotlight is off");
         g_spotlightOn = false;
+    };
+    document.getElementById("lightAnimateOn").onclick = function () {
+        debugLog("light animation on");
+        g_lightAnimateOn = true;
+    };
+    document.getElementById("lightAnimateOff").onclick = function () {
+        debugLog("light animation off");
+        g_lightAnimateOn = false;
     };
     document.getElementById("lightSliderX").oninput = function () {
         g_LightPos[0] = parseFloat(this.value);
@@ -405,7 +414,11 @@ function sendImageToTEXTURE0(image) {
     // Set the texture parameters
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
     gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(
+        gl.TEXTURE_2D,
+        gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR,
+    );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Set the texture unit 0 to the sampler
@@ -428,7 +441,11 @@ function sendImageToTEXTURE1(image) {
     // Set the texture parameters
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
     gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(
+        gl.TEXTURE_2D,
+        gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR,
+    );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     // Set the texture unit 0 to the sampler
@@ -448,7 +465,11 @@ function sendImageToTEXTURE2(image) {
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
     gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(
+        gl.TEXTURE_2D,
+        gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR,
+    );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     gl.uniform1i(u_Sampler2, 2);
@@ -467,7 +488,11 @@ function sendImageToTEXTURE3(image) {
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
     gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(
+        gl.TEXTURE_2D,
+        gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR,
+    );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     gl.uniform1i(u_Sampler3, 3);
@@ -587,6 +612,11 @@ function tick() {
 
     g_seconds = performance.now() / 1000.0 - g_startTime;
     verboseLog(g_seconds);
+
+    if (g_lightAnimateOn) {
+        g_LightPos[0] = 10 + Math.cos(g_seconds) * 10;
+        g_LightPos[2] = 10 + Math.sin(g_seconds) * 10;
+    }
 
     renderScene();
 
