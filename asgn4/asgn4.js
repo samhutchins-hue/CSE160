@@ -47,8 +47,12 @@ var FSHADER_SOURCE = `
   uniform int u_whichTexture;
   uniform bool u_normalOn;
   uniform bool u_lightingOn;
+  uniform bool u_spotlightOn;
   uniform vec3 u_LightPos;
   uniform vec3 u_LightColor;
+  uniform vec3 u_SpotDir;
+  uniform float u_SpotCosCutoff;
+  uniform float u_SpotExponent;
   uniform vec3 u_CameraPos;
 
   void main() {
@@ -79,10 +83,19 @@ var FSHADER_SOURCE = `
     }
 
     if (u_lightingOn) {
+      float spot = 1.0;
+      if (u_spotlightOn) {
+        float cosAngle = dot(-L, normalize(u_SpotDir));
+        if (cosAngle < u_SpotCosCutoff) {
+            spot = 0.0;
+        } else {
+            spot = pow(cosAngle, u_SpotExponent);
+        }
+      }
       float spec = pow(max(dot(R, V), 0.0), 128.0);
-      vec3 diffuse = vec3(gl_FragColor) * nDotL * u_LightColor;
+      vec3 diffuse = vec3(gl_FragColor) * nDotL * u_LightColor * spot;
       vec3 ambient = vec3(gl_FragColor) * 0.3;
-      vec3 specular = u_LightColor * spec;
+      vec3 specular = u_LightColor * spec * spot;
       gl_FragColor = vec4(diffuse + ambient + specular, 1.0);
     }
   }
@@ -107,6 +120,10 @@ let g_keys = {};
 let g_LightPos = [5, 3, 2];
 let g_LightColor = [1, 1, 1];
 let g_lightingOn = true;
+let g_spotlightOn = false;
+let g_SpotDir = [0, -1, 0];
+let g_SpotCosCutoff = Math.cos((25 * Math.PI) / 180);
+let g_SpotExponent = 8;
 
 let a_Position;
 let a_Normal;
@@ -126,6 +143,10 @@ let u_normalOn;
 let u_lightingOn;
 let u_LightPos;
 let u_LightColor;
+let u_spotlightOn;
+let u_SpotDir;
+let u_SpotCosCutoff;
+let u_SpotExponent;
 let u_CameraPos;
 
 function setupWebGL() {
@@ -159,6 +180,14 @@ function addActionsForHtmlUI() {
     document.getElementById("lightingOff").onclick = function () {
         debugLog("lighting is off");
         g_lightingOn = false;
+    };
+    document.getElementById("spotlightOn").onclick = function () {
+        debugLog("spotlight is on");
+        g_spotlightOn = true;
+    };
+    document.getElementById("spotlightOff").onclick = function () {
+        debugLog("spotlight is off");
+        g_spotlightOn = false;
     };
     document.getElementById("lightSliderX").oninput = function () {
         g_LightPos[0] = parseFloat(this.value);
@@ -274,6 +303,26 @@ function connectVariablesToGLSL() {
     u_LightColor = gl.getUniformLocation(gl.program, "u_LightColor");
     if (!u_LightColor) {
         console.log("Failed to get the storage location of u_LightColor");
+    }
+
+    u_spotlightOn = gl.getUniformLocation(gl.program, "u_spotlightOn");
+    if (!u_spotlightOn) {
+        console.log("Failed to get the storage location of u_spotlightOn");
+    }
+
+    u_SpotDir = gl.getUniformLocation(gl.program, "u_SpotDir");
+    if (!u_SpotDir) {
+        console.log("Failed to get the storage location of u_SpotDir");
+    }
+
+    u_SpotCosCutoff = gl.getUniformLocation(gl.program, "u_SpotCosCutoff");
+    if (!u_SpotCosCutoff) {
+        console.log("Failed to get the storage location of u_SpotCosCutoff");
+    }
+
+    u_SpotExponent = gl.getUniformLocation(gl.program, "u_SpotExponent");
+    if (!u_SpotExponent) {
+        console.log("Failed to get the storage location of u_SpotExponent");
     }
 
     u_CameraPos = gl.getUniformLocation(gl.program, "u_CameraPos");
@@ -560,6 +609,10 @@ function renderScene() {
     );
     gl.uniform3fv(u_CameraPos, g_camera.eye.elements);
     gl.uniform1i(u_lightingOn, g_lightingOn ? 1 : 0);
+    gl.uniform1i(u_spotlightOn, g_spotlightOn ? 1 : 0);
+    gl.uniform3f(u_SpotDir, g_SpotDir[0], g_SpotDir[1], g_SpotDir[2]);
+    gl.uniform1f(u_SpotCosCutoff, g_SpotCosCutoff);
+    gl.uniform1f(u_SpotExponent, g_SpotExponent);
 
     // ground
 
