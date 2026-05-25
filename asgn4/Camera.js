@@ -7,8 +7,8 @@ class Camera {
         this.eye = new Vector3([1.5, 1.8, 1.5]);
         this.at = new Vector3([1.5, 1.8, 2.5]);
         this.up = new Vector3([0, 1, 0]);
-        this.collisionOn = true;
-        this.noclipOn = false;
+        this.collisionOn = false;
+        this.noclipOn = true;
 
         this.viewMatrix = new Matrix4();
         this.viewMatrix.setLookAt(
@@ -257,6 +257,7 @@ class Camera {
         this.at.set(this.eye).add(f_prime);
         this.updateViewMatrix();
     }
+
     pitchBy(alpha) {
         this._f.set(this.at).sub(this.eye);
         this._s = Vector3.cross(this._f, this.up);

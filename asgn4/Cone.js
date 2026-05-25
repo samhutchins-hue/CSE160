@@ -40,5 +40,7 @@ function drawCone(matrix, color) {
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
   gl.uniform4fv(u_FragColor, color);
   gl.uniformMatrix4fv(u_ModelMatrix, false, matrix.elements);
+  g_normalScratchM.setInverseOf(matrix).transpose();
+  gl.uniformMatrix4fv(u_NormalMatrix, false, g_normalScratchM.elements);
   gl.drawArrays(gl.TRIANGLES, 0, g_coneVertexCount);
 }
