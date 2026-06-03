@@ -1,7 +1,8 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
+
 // import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
 class ColorGUIHelper {
@@ -56,13 +57,46 @@ function main() {
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   camera.position.set(0, 3, 25);
 
-  const controls = new OrbitControls(camera, canvas);
-  controls.target.set(0, 3, 0);
-  controls.update();
+  // const controls = new OrbitControls(camera, canvas);
+  // controls.target.set(0, 3, 0);
+  // controls.update();
+
+  const controls = new PointerLockControls(camera, canvas);
+  canvas.addEventListener("click", () => controls.lock());
+
+  const keys = { forward: false, back: false, left: false, right: false };
+  const MOVE_SPEED = 20;
+
+  document.addEventListener("keydown", (e) => setKey(e.code, true));
+  document.addEventListener("keyup", (e) => setKey(e.code, false));
+  function setKey(code, isDown) {
+    // console.log("key:", code, isDown);
+    switch (code) {
+      case "KeyW":
+      case "ArrowUp":
+        keys.forward = isDown;
+        break;
+      case "KeyS":
+      case "ArrowDown":
+        keys.back = isDown;
+        break;
+      case "KeyA":
+      case "ArrowLeft":
+        keys.left = isDown;
+        break;
+      case "KeyD":
+      case "ArrowRight":
+        keys.right = isDown;
+        break;
+    }
+  }
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x05060a);
   scene.fog = new THREE.Fog(0x05060a, 20, 70);
+
+  // Clock measures real seconds between frames, so movement is framerate-independent.
+  const clock = new THREE.Clock();
 
   const ALLEY_WIDTH = 10;
   const ALLEY_LENGTH = 60;
@@ -81,13 +115,12 @@ function main() {
   }
 
   const gltfLoader = new GLTFLoader();
-  async function loadModel(path) {
+  async function loadModel(path, { x = 0, y = 0, z = 0 } = {}) {
     try {
       const gltf = await gltfLoader.loadAsync(path);
-
       const model = gltf.scene;
+      model.position.set(x, y, z);
       scene.add(model);
-
       return model;
     } catch (error) {
       console.error("error occurred loading GLTF model:", error);
@@ -158,6 +191,9 @@ function main() {
   makeSideWall(ALLEY_WIDTH / 2);
   makeBackWall();
 
+  // load blender lab model
+  loadModel("./blenderlabsamh.glb", { y: 1, z: -ALLEY_LENGTH / 2 + 5 });
+
   const ambient = new THREE.AmbientLight(0x404060, 0.4);
   scene.add(ambient);
 
@@ -183,6 +219,15 @@ function main() {
       const canvas = renderer.domElement;
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
       camera.updateProjectionMatrix();
+    }
+
+    const delta = clock.getDelta();
+    if (controls.isLocked) {
+      const step = MOVE_SPEED * delta;
+      if (keys.forward) controls.moveForward(step);
+      if (keys.back) controls.moveForward(-step);
+      if (keys.right) controls.moveRight(step);
+      if (keys.left) controls.moveRight(-step);
     }
 
     renderer.render(scene, camera);
