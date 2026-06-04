@@ -1,0 +1,3 @@
+- three.js docs
+- https://www.youtube.com/watch?v=ylyLefnMc1c&t=222s
+- https://opengameart.org/content/cloudy-skyboxes-0
